@@ -1,0 +1,84 @@
+{
+  "app": {
+    "title": "Red Flags",
+    "subtitle": "The Game of Terrible Dates",
+    "tagline": "Create the perfect date. Then destroy it."
+  },
+  "home": {
+    "createRoom": "Create Room",
+    "joinRoom": "Join Room",
+    "enterNickname": "Enter your nickname",
+    "enterRoomCode": "Enter room code",
+    "howToPlay": "How to Play",
+    "play": "Play",
+    "or": "or"
+  },
+  "lobby": {
+    "waitingForPlayers": "Waiting for players...",
+    "players": "Players ({{count}}/{{max}})",
+    "startGame": "Start Game",
+    "needMorePlayers": "Need at least {{min}} players",
+    "shareLink": "Share this link with friends",
+    "roomCode": "Room Code",
+    "copied": "Copied!",
+    "copyLink": "Copy Link",
+    "host": "Host",
+    "you": "You",
+    "waitingForHost": "Waiting for the host to start..."
+  },
+  "game": {
+    "youAreJudge": "You are the Single!",
+    "youAreMatchmaker": "You are a Matchmaker!",
+    "selectPerks": "Pick 2 Perks for {{judge}}'s date",
+    "playRedFlag": "Play a Red Flag on {{target}}'s date!",
+    "lockIn": "Lock In",
+    "argue": "Why is your date the best despite the red flag?",
+    "submitArgument": "Submit",
+    "pickWinner": "Pick the best date!",
+    "round": "Round {{number}}",
+    "timeLeft": "{{seconds}}s",
+    "waiting": "Waiting for other players...",
+    "judgePicking": "{{judge}} is choosing...",
+    "revealingDates": "Revealing the dates...",
+    "selected": "{{count}}/2 selected",
+    "argumentPlaceholder": "Type your argument here...",
+    "waitingForJudge": "Waiting for the judge to decide...",
+    "date": "{{name}}'s Date",
+    "chooseTarget": "Who gets the Red Flag?",
+    "chooseTargetAndCard": "Choose a target and play a Red Flag!",
+    "exitGame": "Exit Game",
+    "exitConfirmTitle": "Leave the game?",
+    "exitConfirmDesc": "You'll lose your progress if you leave now.",
+    "stayInGame": "Stay"
+  },
+  "results": {
+    "roundWinner": "{{name}} wins the round!",
+    "gameWinner": "{{name}} wins the game!",
+    "playAgain": "Play Again",
+    "leave": "Leave",
+    "nextRound": "Next round starting...",
+    "finalScores": "Final Scores",
+    "score": "{{score}} pts"
+  },
+  "rules": {
+    "title": "How to Play",
+    "step1Title": "Create a Date",
+    "step1Desc": "Each matchmaker picks 2 Perk cards to create the perfect date for the Judge.",
+    "step2Title": "Sabotage!",
+    "step2Desc": "Play a Red Flag card on another player's date to ruin it!",
+    "step3Title": "Argue Your Case",
+    "step3Desc": "Convince the Judge that your date is still the best, despite the Red Flag.",
+    "step4Title": "The Judge Decides",
+    "step4Desc": "The Judge picks the date they'd most likely go on. Winner gets a point!",
+    "winCondition": "First to 7 points wins!",
+    "close": "Got it!"
+  },
+  "errors": {
+    "roomNotFound": "Room not found",
+    "roomFull": "Room is full",
+    "gameInProgress": "Game already in progress",
+    "nicknameTaken": "Nickname already taken",
+    "connectionLost": "Connection lost. Reconnecting...",
+    "invalidNickname": "Nickname must be 2-15 characters"
+  }
+}

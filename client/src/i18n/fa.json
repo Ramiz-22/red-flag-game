@@ -1,0 +1,84 @@
+{
+  "app": {
+    "title": "پرچم قرمز",
+    "subtitle": "بازی قرارهای وحشتناک",
+    "tagline": "یه قرار عالی بساز. بعد نابودش کن."
+  },
+  "home": {
+    "createRoom": "ساخت اتاق",
+    "joinRoom": "ورود به اتاق",
+    "enterNickname": "اسم مستعارت رو وارد کن",
+    "enterRoomCode": "کد اتاق رو وارد کن",
+    "howToPlay": "نحوه بازی",
+    "play": "بازی",
+    "or": "یا"
+  },
+  "lobby": {
+    "waitingForPlayers": "منتظر بازیکنان...",
+    "players": "بازیکنان ({{count}}/{{max}})",
+    "startGame": "شروع بازی",
+    "needMorePlayers": "حداقل {{min}} بازیکن لازمه",
+    "shareLink": "این لینک رو برای دوستات بفرست",
+    "roomCode": "کد اتاق",
+    "copied": "کپی شد!",
+    "copyLink": "کپی لینک",
+    "host": "میزبان",
+    "you": "شما",
+    "waitingForHost": "منتظر شروع بازی توسط میزبان..."
+  },
+  "game": {
+    "youAreJudge": "تو مجردی! داور این دوری!",
+    "youAreMatchmaker": "تو واسطه‌ای! یه قرار بساز!",
+    "selectPerks": "۲ تا ویژگی خوب برای قرار {{judge}} انتخاب کن",
+    "playRedFlag": "یه پرچم قرمز رو قرار {{target}} بزن!",
+    "lockIn": "تایید",
+    "argue": "چرا قرار تو با وجود پرچم قرمز هنوز بهترینه؟",
+    "submitArgument": "ارسال",
+    "pickWinner": "بهترین قرار رو انتخاب کن!",
+    "round": "دور {{number}}",
+    "timeLeft": "{{seconds}} ثانیه",
+    "waiting": "منتظر بقیه بازیکنان...",
+    "judgePicking": "{{judge}} داره انتخاب میکنه...",
+    "revealingDates": "رونمایی از قرارها...",
+    "selected": "{{count}}/۲ انتخاب شده",
+    "argumentPlaceholder": "استدلالت رو اینجا بنویس...",
+    "waitingForJudge": "منتظر تصمیم داور...",
+    "date": "قرار {{name}}",
+    "chooseTarget": "پرچم قرمز رو به کی بدی؟",
+    "chooseTargetAndCard": "یه هدف انتخاب کن و پرچم قرمز بزن!",
+    "exitGame": "خروج از بازی",
+    "exitConfirmTitle": "از بازی خارج بشی؟",
+    "exitConfirmDesc": "اگه الان بری، امتیازات از دست میره.",
+    "stayInGame": "میمونم"
+  },
+  "results": {
+    "roundWinner": "{{name}} این دور رو برد!",
+    "gameWinner": "{{name}} بازی رو برد!",
+    "playAgain": "بازی دوباره",
+    "leave": "خروج",
+    "nextRound": "دور بعدی شروع میشه...",
+    "finalScores": "نتایج نهایی",
+    "score": "{{score}} امتیاز"
+  },
+  "rules": {
+    "title": "نحوه بازی",
+    "step1Title": "یه قرار بساز",
+    "step1Desc": "هر واسطه ۲ کارت ویژگی خوب انتخاب میکنه تا یه قرار عالی برای داور بسازه.",
+    "step2Title": "خرابکاری!",
+    "step2Desc": "یه کارت پرچم قرمز رو قرار بازیکن بغلیت بزن تا خرابش کنی!",
+    "step3Title": "دفاع کن",
+    "step3Desc": "داور رو قانع کن که قرار تو با وجود پرچم قرمز هنوز بهترینه.",
+    "step4Title": "داور تصمیم میگیره",
+    "step4Desc": "داور قراری رو انتخاب میکنه که بیشتر حاضره بره. برنده امتیاز میگیره!",
+    "winCondition": "اولین نفری که ۷ امتیاز بگیره برنده‌ست!",
+    "close": "فهمیدم!"
+  },
+  "errors": {
+    "roomNotFound": "اتاق پیدا نشد",
+    "roomFull": "اتاق پره",
+    "gameInProgress": "بازی در حال اجراست",
+    "nicknameTaken": "این اسم قبلاً گرفته شده",
+    "connectionLost": "ارتباط قطع شد. در حال اتصال مجدد...",
+    "invalidNickname": "اسم باید بین ۲ تا ۱۵ حرف باشه"
+  }
+}

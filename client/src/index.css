@@ -1,0 +1,330 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-dark text-white antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  [dir='rtl'] body,
+  [lang='fa'] body {
+    font-family: 'Vazirmatn', sans-serif;
+  }
+}
+
+@layer components {
+  .card-perk {
+    @apply bg-gradient-to-br from-white via-gray-50 to-gray-100 text-gray-900 rounded-2xl
+           border border-yellow-300/40 relative overflow-hidden;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 215, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center bottom;
+  }
+
+  .card-perk::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 1.5px solid rgba(212, 175, 55, 0.2);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .card-perk::after {
+    content: '♥';
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 14px;
+    color: rgba(212, 175, 55, 0.35);
+  }
+
+  [dir='rtl'] .card-perk::after {
+    right: auto;
+    left: 10px;
+  }
+
+  .card-perk:hover {
+    transform: scale(1.12) translateY(-8px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(255, 215, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    z-index: 20;
+  }
+
+  .card-redflag {
+    @apply text-white rounded-2xl relative overflow-hidden;
+    background: linear-gradient(135deg, #b91c1c, #dc2626, #991b1b);
+    box-shadow:
+      0 2px 8px rgba(220, 38, 38, 0.3),
+      0 0 0 1px rgba(248, 113, 113, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center bottom;
+  }
+
+  .card-redflag::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .card-redflag::after {
+    content: '⚑';
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  [dir='rtl'] .card-redflag::after {
+    right: auto;
+    left: 10px;
+  }
+
+  .card-redflag:hover {
+    transform: scale(1.12) translateY(-8px);
+    box-shadow:
+      0 20px 40px rgba(220, 38, 38, 0.4),
+      0 0 30px rgba(220, 38, 38, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    z-index: 20;
+  }
+
+  .card-mini {
+    transition: all 0.25s ease;
+  }
+  .card-mini:hover {
+    transform: scale(1.04);
+  }
+
+  /* Poker-style cards */
+  .poker-card {
+    width: 110px;
+    height: 160px;
+    border-radius: 10px;
+    position: relative;
+    flex-shrink: 0;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+
+  .poker-card-white {
+    background: linear-gradient(145deg, #ffffff, #f8f7f4, #ede9e3);
+    border: 1.5px solid rgba(180, 160, 120, 0.35);
+    box-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .poker-card-red {
+    background: linear-gradient(145deg, #ef4444, #dc2626, #b91c1c);
+    border: 1.5px solid rgba(248, 113, 113, 0.25);
+    box-shadow:
+      0 2px 10px rgba(220, 38, 38, 0.3),
+      0 0 0 1px rgba(248, 113, 113, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+
+  .poker-card-back {
+    background: linear-gradient(145deg, #2a1015, #1a0a0d);
+    border: 1.5px solid rgba(220, 38, 38, 0.15);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .poker-card-back::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(220, 38, 38, 0.1);
+    border-radius: 7px;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 3px,
+      rgba(220, 38, 38, 0.04) 3px,
+      rgba(220, 38, 38, 0.04) 6px
+    );
+  }
+
+  .poker-card-back-pattern {
+    font-size: 28px;
+    color: rgba(220, 38, 38, 0.3);
+    font-weight: bold;
+    z-index: 1;
+  }
+
+  .poker-card-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    position: relative;
+  }
+
+  .poker-card-corner {
+    font-size: 11px;
+    line-height: 1;
+    position: absolute;
+  }
+
+  .poker-card-corner.top {
+    top: 6px;
+    left: 7px;
+  }
+
+  [dir='rtl'] .poker-card-corner.top {
+    left: auto;
+    right: 7px;
+  }
+
+  .poker-card-corner.bottom {
+    bottom: 6px;
+    right: 7px;
+    transform: rotate(180deg);
+  }
+
+  [dir='rtl'] .poker-card-corner.bottom {
+    right: auto;
+    left: 7px;
+  }
+
+  .poker-card-white .poker-card-corner {
+    color: #b8860b;
+  }
+
+  .poker-card-red .poker-card-corner {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .poker-card-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 16px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow: hidden;
+  }
+
+  .poker-card-white .poker-card-body {
+    color: #1a1a1a;
+  }
+
+  .poker-card-red .poker-card-body {
+    color: #ffffff;
+  }
+
+  .poker-card:hover {
+    z-index: 20 !important;
+  }
+
+  @media (max-width: 640px) {
+    .poker-card {
+      width: 85px;
+      height: 125px;
+    }
+    .poker-card-body {
+      font-size: 9px;
+      padding: 12px 4px;
+    }
+    .poker-card-corner {
+      font-size: 9px;
+    }
+  }
+
+  .btn-primary {
+    @apply text-white font-bold py-3 px-6 rounded-xl
+           transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    @apply bg-surface-elevated hover:bg-surface-border text-white font-medium py-3 px-6 rounded-xl
+           border border-surface-border transition-all duration-200 active:scale-95;
+  }
+
+  .btn-danger-outline {
+    @apply text-red-400 font-medium py-2 px-4 rounded-xl
+           border border-red-500/30 transition-all duration-200 active:scale-95;
+    background: rgba(220, 38, 38, 0.08);
+  }
+  .btn-danger-outline:hover {
+    background: rgba(220, 38, 38, 0.18);
+    border-color: rgba(220, 38, 38, 0.5);
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glow-red {
+    box-shadow: 0 0 30px rgba(220, 38, 38, 0.3), 0 0 60px rgba(220, 38, 38, 0.1);
+  }
+
+  .glow-selected {
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.4), 0 0 50px rgba(220, 38, 38, 0.15);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
