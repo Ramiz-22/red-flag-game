@@ -83,6 +83,38 @@ export function registerRoomHandlers(socket: Socket, gm: GameManager) {
   socket.on('room:leave', () => {
     handleLeave(socket, gm);
   });
+
+  socket.on('room:kick', ({ targetSocketId }: { targetSocketId: string }) => {
+    const game = gm.getGameForSocket(socket.id!);
+    if (!game) return;
+
+    const player = game.players.get(socket.id!);
+    if (!player?.isHost) {
+      socket.emit('room:error', { message: 'Not the host', code: 'NOT_HOST' });
+      return;
+    }
+
+    if (targetSocketId === socket.id) return;
+    if (!game.players.has(targetSocketId)) return;
+
+    const newHostSocketId = game.removePlayer(targetSocketId);
+    gm.removeSocketMapping(targetSocketId);
+
+    const targetSocket = gm.getIO().sockets.sockets.get(targetSocketId);
+    if (targetSocket) {
+      targetSocket.emit('room:kicked');
+      targetSocket.leave(game.code);
+    }
+
+    socket.to(game.code).emit('room:player-left', {
+      socketId: targetSocketId,
+      newHostSocketId,
+    });
+    socket.emit('room:player-left', {
+      socketId: targetSocketId,
+      newHostSocketId,
+    });
+  });
 }
 
 export function handleLeave(socket: Socket, gm: GameManager) {

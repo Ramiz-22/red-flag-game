@@ -194,6 +194,7 @@ interface GameContextType {
   selectPerks: (cardIds: string[]) => void;
   playRedFlag: (cardId: string, targetSocketId: string) => void;
   judgePick: (winnerSocketId: string) => void;
+  kickPlayer: (targetSocketId: string) => void;
   clearError: () => void;
 }
 
@@ -232,6 +233,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     socket.on('room:error', (data: { message: string }) => {
       dispatch({ type: 'SET_ERROR', payload: data.message });
+    });
+
+    socket.on('room:kicked', () => {
+      dispatch({ type: 'LEAVE_ROOM' });
     });
 
     socket.on('game:started', (data: GameStartedPayload) => {
@@ -281,6 +286,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       socket.off('room:player-joined');
       socket.off('room:player-left');
       socket.off('room:error');
+      socket.off('room:kicked');
       socket.off('game:started');
       socket.off('game:hand-dealt');
       socket.off('game:phase-changed');
@@ -323,6 +329,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket?.emit('game:judge-pick', { winnerSocketId });
   }, [socket]);
 
+  const kickPlayer = useCallback((targetSocketId: string) => {
+    socket?.emit('room:kick', { targetSocketId });
+  }, [socket]);
+
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null });
   }, []);
@@ -338,6 +348,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         selectPerks,
         playRedFlag,
         judgePick,
+        kickPlayer,
         clearError,
       }}
     >

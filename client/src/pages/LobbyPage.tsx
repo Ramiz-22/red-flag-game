@@ -12,7 +12,7 @@ export default function LobbyPage() {
   const { code } = useParams<{ code: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { state, leaveRoom, startGame, clearError } = useGame();
+  const { state, leaveRoom, startGame, kickPlayer, clearError } = useGame();
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function LobbyPage() {
                   {player.nickname.charAt(0).toUpperCase()}
                 </div>
                 <span className="font-medium flex-1">{player.nickname}</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   {player.isHost && (
                     <span className="px-2.5 py-0.5 text-xs rounded-full bg-brand-gold/15 text-brand-gold border border-brand-gold/20 font-medium">
                       {t('lobby.host')}
@@ -74,6 +74,16 @@ export default function LobbyPage() {
                     <span className="px-2.5 py-0.5 text-xs rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 font-medium">
                       {t('lobby.you')}
                     </span>
+                  )}
+                  {state.isHost && player.socketId !== state.mySocketId && (
+                    <button
+                      onClick={() => kickPlayer(player.socketId)}
+                      className="px-2 py-0.5 text-xs rounded-full bg-red-500/10 text-red-400 border border-red-500/20
+                                 hover:bg-red-500/25 transition-colors"
+                      title="Kick"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
               </motion.div>
@@ -112,7 +122,7 @@ export default function LobbyPage() {
             onClick={() => setShowRules(true)}
             className="text-sm text-gray-500 hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <span>?</span> {t('home.howToPlay')}
+            {t('home.howToPlay')} <span>?</span>
           </button>
           <button
             onClick={() => {

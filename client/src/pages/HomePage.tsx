@@ -100,6 +100,7 @@ export default function HomePage() {
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname) { setMode('create'); handleCreate(); } }}
                 placeholder={t('home.enterNickname')}
                 maxLength={15}
                 className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
@@ -128,14 +129,15 @@ export default function HomePage() {
               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
 
-            <div className="flex gap-3">
+            <div className="space-y-3">
               <input
                 type="text"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname && roomCode.trim().length >= 4) handleJoin(); }}
                 placeholder={t('home.enterRoomCode')}
                 maxLength={6}
-                className="flex-1 px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
+                className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
                            text-white placeholder-gray-500 focus:outline-none focus:border-brand-red/60
                            focus:bg-white/[0.08] transition-all duration-300
                            font-mono tracking-[0.3em] uppercase text-center text-lg"
@@ -145,7 +147,7 @@ export default function HomePage() {
                   if (isValidNickname && roomCode.trim().length >= 4) handleJoin();
                 }}
                 disabled={!isValidNickname || roomCode.trim().length < 4}
-                className="btn-secondary px-6 whitespace-nowrap"
+                className="btn-secondary w-full py-3.5 text-lg"
               >
                 {t('home.joinRoom')}
               </button>
@@ -165,6 +167,7 @@ export default function HomePage() {
               type="text"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname) handleJoin(); }}
               placeholder={t('home.enterNickname')}
               maxLength={15}
               className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
@@ -198,8 +201,8 @@ export default function HomePage() {
         className="mt-8 text-gray-500 hover:text-brand-red transition-all duration-300 text-sm
                    relative z-10 flex items-center gap-2"
       >
-        <span className="text-lg">?</span>
         {t('home.howToPlay')}
+        <span className="text-lg">?</span>
       </motion.button>
 
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />

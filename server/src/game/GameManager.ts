@@ -58,6 +58,14 @@ export class GameManager {
     return this.games.get(code);
   }
 
+  removeSocketMapping(socketId: string) {
+    this.socketToRoom.delete(socketId);
+  }
+
+  getIO() {
+    return this.io;
+  }
+
   leaveRoom(socketId: string): { game: GameInstance; newHostSocketId?: string } | null {
     const code = this.socketToRoom.get(socketId);
     if (!code) return null;
