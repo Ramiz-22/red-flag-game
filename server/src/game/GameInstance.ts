@@ -315,12 +315,7 @@ export class GameInstance {
     const dates = this.buildDates();
     this.io.to(this.room).emit('game:dates-revealed', { dates });
 
-    this.setPhase('REVEAL' as GamePhase, CONFIG.REVEAL_TIMER);
-    setTimeout(() => {
-      if (this.phase === ('REVEAL' as GamePhase)) {
-        this.setPhase('JUDGING' as GamePhase, CONFIG.JUDGING_TIMER);
-      }
-    }, CONFIG.REVEAL_TIMER * 1000);
+    this.setPhase('JUDGING' as GamePhase, CONFIG.JUDGING_TIMER);
   }
 
   private buildDates(): DateProfile[] {

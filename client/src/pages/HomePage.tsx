@@ -133,7 +133,12 @@ export default function HomePage() {
               <input
                 type="text"
                 value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  let val = e.target.value;
+                  const match = val.match(/\/room\/([A-Za-z0-9]+)/);
+                  if (match) val = match[1];
+                  setRoomCode(val.toUpperCase());
+                }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname && roomCode.trim().length >= 4) handleJoin(); }}
                 placeholder={t('home.enterRoomCode')}
                 maxLength={6}
