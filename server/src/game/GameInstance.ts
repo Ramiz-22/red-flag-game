@@ -16,7 +16,7 @@ export class GameInstance {
   redFlagDeck: Deck | null = null;
 
   perkSelections: Map<string, string[]> = new Map();
-  redFlagAssignments: Map<string, Card> = new Map(); // targetSocketId -> Card
+  redFlagAssignments: Map<string, Card[]> = new Map(); // targetSocketId -> Cards
   redFlagPlayedBy: Set<string> = new Set(); // who has already played a red flag
   judgeChoice: string | null = null;
 
@@ -226,9 +226,7 @@ export class GameInstance {
   }
 
   private broadcastAvailableTargets() {
-    const takenTargets = [...this.redFlagAssignments.keys()];
     const targets = this.matchmakers
-      .filter((mm) => !takenTargets.includes(mm.socketId))
       .map((mm) => ({ socketId: mm.socketId, nickname: mm.nickname }));
 
     this.io.to(this.room).emit('game:redflag-targets', {
@@ -241,7 +239,6 @@ export class GameInstance {
     if (this.phase !== ('RED_FLAG_PLAY' as GamePhase)) return false;
     if (socketId === this.judgeSocketId) return false;
     if (this.redFlagPlayedBy.has(socketId)) return false;
-    if (this.redFlagAssignments.has(targetSocketId)) return false;
     if (targetSocketId === socketId) return false;
     if (!this.matchmakers.some((mm) => mm.socketId === targetSocketId)) return false;
 
@@ -251,7 +248,9 @@ export class GameInstance {
     const card = player.removeRedFlag(cardId);
     if (!card) return false;
 
-    this.redFlagAssignments.set(targetSocketId, card);
+    const existing = this.redFlagAssignments.get(targetSocketId) || [];
+    existing.push(card);
+    this.redFlagAssignments.set(targetSocketId, existing);
     this.redFlagPlayedBy.add(socketId);
     this.lastActivityAt = Date.now();
 
@@ -271,20 +270,20 @@ export class GameInstance {
   }
 
   private autoPlayRedFlags() {
-    const takenTargets = new Set(this.redFlagAssignments.keys());
     for (const mm of this.matchmakers) {
       if (this.redFlagPlayedBy.has(mm.socketId)) continue;
       const availableTargets = this.matchmakers.filter(
-        (t) => t.socketId !== mm.socketId && !takenTargets.has(t.socketId)
+        (t) => t.socketId !== mm.socketId
       );
       if (availableTargets.length === 0) continue;
       const target = availableTargets[Math.floor(Math.random() * availableTargets.length)];
       const randomCard = mm.hand.redFlags[0];
       if (randomCard) {
         mm.removeRedFlag(randomCard.id);
-        this.redFlagAssignments.set(target.socketId, randomCard);
+        const existing = this.redFlagAssignments.get(target.socketId) || [];
+        existing.push(randomCard);
+        this.redFlagAssignments.set(target.socketId, existing);
         this.redFlagPlayedBy.add(mm.socketId);
-        takenTargets.add(target.socketId);
       }
     }
   }
@@ -314,7 +313,7 @@ export class GameInstance {
         matchmakerSocketId: mm.socketId,
         matchmakerNickname: mm.nickname,
         perks: actualPerks,
-        redFlag: this.redFlagAssignments.get(mm.socketId) || null,
+        redFlags: this.redFlagAssignments.get(mm.socketId) || [],
       };
     });
   }
@@ -389,8 +388,8 @@ export class GameInstance {
       const cards = cardIds.map((id) => this.perkCards.find((c) => c.id === id)!).filter(Boolean);
       this.perkDeck?.discard(cards);
     }
-    for (const [, card] of this.redFlagAssignments) {
-      this.redFlagDeck?.discard([card]);
+    for (const [, cards] of this.redFlagAssignments) {
+      this.redFlagDeck?.discard(cards);
     }
   }
 

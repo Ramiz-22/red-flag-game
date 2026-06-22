@@ -28,7 +28,7 @@ export interface DateProfile {
   matchmakerSocketId: string;
   matchmakerNickname: string;
   perks: Card[];
-  redFlag: Card | null;
+  redFlags: Card[];
 }
 
 export enum GamePhase {
