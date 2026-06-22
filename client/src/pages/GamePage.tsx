@@ -37,13 +37,62 @@ const OTHER_LAYOUTS: Record<number, Zone[]> = {
     { seat: { x: 93, y: 52 }, date: { x: 85, y: 52 }, edge: 'right' },
   ],
   6: [
-    { seat: { x: 6,  y: 52 }, date: { x: 14, y: 52 }, edge: 'left' },
+    { seat: { x: 6,  y: 62 }, date: { x: 14, y: 62 }, edge: 'left' },
     { seat: { x: 25, y: 6  }, date: { x: 25, y: 28 }, edge: 'top' },
     { seat: { x: 50, y: 4  }, date: { x: 50, y: 24 }, edge: 'top' },
     { seat: { x: 75, y: 6  }, date: { x: 75, y: 28 }, edge: 'top' },
-    { seat: { x: 94, y: 52 }, date: { x: 86, y: 52 }, edge: 'right' },
+    { seat: { x: 94, y: 62 }, date: { x: 86, y: 62 }, edge: 'right' },
+  ],
+  // 7-10: U-shaped perimeter (left column up → top row → right column down).
+  // Date rows are scaled down (see getDateScale) so the wider counts never overlap.
+  7: [
+    { seat: { x: 6,  y: 66 }, date: { x: 16, y: 66 }, edge: 'left' },
+    { seat: { x: 6,  y: 34 }, date: { x: 16, y: 34 }, edge: 'left' },
+    { seat: { x: 38, y: 8  }, date: { x: 38, y: 27 }, edge: 'top' },
+    { seat: { x: 62, y: 8  }, date: { x: 62, y: 27 }, edge: 'top' },
+    { seat: { x: 94, y: 34 }, date: { x: 84, y: 34 }, edge: 'right' },
+    { seat: { x: 94, y: 66 }, date: { x: 84, y: 66 }, edge: 'right' },
+  ],
+  8: [
+    { seat: { x: 6,  y: 66 }, date: { x: 15, y: 66 }, edge: 'left' },
+    { seat: { x: 6,  y: 34 }, date: { x: 15, y: 34 }, edge: 'left' },
+    { seat: { x: 33, y: 7  }, date: { x: 33, y: 25 }, edge: 'top' },
+    { seat: { x: 50, y: 5  }, date: { x: 50, y: 23 }, edge: 'top' },
+    { seat: { x: 67, y: 7  }, date: { x: 67, y: 25 }, edge: 'top' },
+    { seat: { x: 94, y: 34 }, date: { x: 85, y: 34 }, edge: 'right' },
+    { seat: { x: 94, y: 66 }, date: { x: 85, y: 66 }, edge: 'right' },
+  ],
+  9: [
+    { seat: { x: 5,  y: 72 }, date: { x: 15, y: 72 }, edge: 'left' },
+    { seat: { x: 5,  y: 46 }, date: { x: 15, y: 46 }, edge: 'left' },
+    { seat: { x: 5,  y: 20 }, date: { x: 15, y: 20 }, edge: 'left' },
+    { seat: { x: 40, y: 7  }, date: { x: 40, y: 18 }, edge: 'top' },
+    { seat: { x: 60, y: 7  }, date: { x: 60, y: 18 }, edge: 'top' },
+    { seat: { x: 95, y: 20 }, date: { x: 85, y: 20 }, edge: 'right' },
+    { seat: { x: 95, y: 46 }, date: { x: 85, y: 46 }, edge: 'right' },
+    { seat: { x: 95, y: 72 }, date: { x: 85, y: 72 }, edge: 'right' },
+  ],
+  10: [
+    { seat: { x: 5,  y: 72 }, date: { x: 15, y: 72 }, edge: 'left' },
+    { seat: { x: 5,  y: 46 }, date: { x: 15, y: 46 }, edge: 'left' },
+    { seat: { x: 5,  y: 20 }, date: { x: 15, y: 20 }, edge: 'left' },
+    { seat: { x: 34, y: 6  }, date: { x: 34, y: 16 }, edge: 'top' },
+    { seat: { x: 50, y: 4  }, date: { x: 50, y: 14 }, edge: 'top' },
+    { seat: { x: 66, y: 6  }, date: { x: 66, y: 16 }, edge: 'top' },
+    { seat: { x: 95, y: 20 }, date: { x: 85, y: 20 }, edge: 'right' },
+    { seat: { x: 95, y: 46 }, date: { x: 85, y: 46 }, edge: 'right' },
+    { seat: { x: 95, y: 72 }, date: { x: 85, y: 72 }, edge: 'right' },
   ],
 };
+
+// Date rows shrink as the table fills up so the wider player counts stay tidy.
+function getDateScale(total: number): number {
+  if (total <= 6) return 1;
+  if (total === 7) return 0.85;
+  if (total === 8) return 0.8;
+  if (total === 9) return 0.72;
+  return 0.68; // 10
+}
 
 // Position of a player relative to "you". relativeIndex 0 is always you (bottom).
 function getZone(relativeIndex: number, total: number): Zone {
@@ -54,7 +103,7 @@ function getZone(relativeIndex: number, total: number): Zone {
   const others = OTHER_LAYOUTS[total];
   if (others) return others[relativeIndex - 1];
 
-  // Fallback (7+ players): spread others along an inverted-∩ arc
+  // Fallback (>10 players): spread others along an inverted-∩ arc
   // (lower-left → top → lower-right), skipping the bottom where you sit.
   const count = total - 1;
   const t = (relativeIndex - 1 + 0.5) / count;
@@ -189,6 +238,7 @@ export default function GamePage() {
             <div className="flex-1 relative min-h-0">
               {(() => {
                 const total = state.players.length;
+                const dateScale = getDateScale(total);
                 return (
                   <>
                     {/* Player nameplates at their zone edge */}
@@ -275,7 +325,8 @@ export default function GamePage() {
                               transition={{ delay: i * 0.08, type: 'spring', stiffness: 200, damping: 20 }}
                               onClick={() => canPick && judgePick(p.socketId)}
                             >
-                              <div className={`flex gap-1 ${isWinner ? 'drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]' : ''}`}>
+                              <div className={`flex gap-1 ${isWinner ? 'drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]' : ''}`}
+                                style={{ transform: `scale(${dateScale})`, transformOrigin: 'center' }}>
                                 {date.perks.map((perk, pi) => (
                                   <motion.div key={perk.id}
                                     initial={{ rotateY: -90, opacity: 0 }}
@@ -309,7 +360,7 @@ export default function GamePage() {
                               </div>
                             </motion.div>
                           ) : (
-                            <div className="flex gap-1">
+                            <div className="flex gap-1" style={{ transform: `scale(${dateScale})`, transformOrigin: 'center' }}>
                               {[0, 1, 2].map(s => <div key={s} className="poker-card-slot" />)}
                             </div>
                           )}

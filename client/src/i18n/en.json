@@ -11,7 +11,8 @@
     "enterRoomCode": "Enter room code",
     "howToPlay": "How to Play",
     "play": "Play",
-    "or": "or"
+    "or": "or",
+    "nicknameFirst": "Enter your nickname first"
   },
   "lobby": {
     "waitingForPlayers": "Waiting for players...",

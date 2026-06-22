@@ -19,6 +19,7 @@ export default function HomePage() {
     searchParams.get('room') ? 'join' : 'home'
   );
   const [showRules, setShowRules] = useState(false);
+  const [showNicknameHint, setShowNicknameHint] = useState(false);
 
   useEffect(() => {
     if (state.isInRoom && state.roomCode) {
@@ -99,7 +100,7 @@ export default function HomePage() {
               <input
                 type="text"
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                onChange={(e) => { setNickname(e.target.value); setShowNicknameHint(false); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname) { setMode('create'); handleCreate(); } }}
                 placeholder={t('home.enterNickname')}
                 maxLength={15}
@@ -139,7 +140,12 @@ export default function HomePage() {
                   if (match) val = match[1];
                   setRoomCode(val.toUpperCase().slice(0, 6));
                 }}
-                onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname && roomCode.trim().length >= 4) handleJoin(); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && roomCode.trim().length >= 4) {
+                    if (!isValidNickname) { setShowNicknameHint(true); return; }
+                    handleJoin();
+                  }
+                }}
                 placeholder={t('home.enterRoomCode')}
                 className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
                            text-white placeholder-gray-500 focus:outline-none focus:border-brand-red/60
@@ -148,13 +154,19 @@ export default function HomePage() {
               />
               <button
                 onClick={() => {
+                  if (roomCode.trim().length >= 4 && !isValidNickname) { setShowNicknameHint(true); return; }
                   if (isValidNickname && roomCode.trim().length >= 4) handleJoin();
                 }}
-                disabled={!isValidNickname || roomCode.trim().length < 4}
+                disabled={roomCode.trim().length < 4}
                 className="btn-secondary w-full py-3.5 text-lg"
               >
                 {t('home.joinRoom')}
               </button>
+              {showNicknameHint && !isValidNickname && (
+                <p className="text-red-400 text-sm text-center animate-pulse">
+                  {t('home.nicknameFirst')}
+                </p>
+              )}
             </div>
           </div>
         )}

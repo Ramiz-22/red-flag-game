@@ -41,7 +41,7 @@ npm start            # Run production server
 ```
 
 ## Game Flow
-1. **HomePage** → Enter nickname → Create/Join room (Enter key supported)
+1. **HomePage** → Enter nickname → Create/Join room (Enter key supported, nickname-first hint if missing)
 2. **LobbyPage** → Wait for 3+ players → Host starts (host can kick players)
 3. **GamePage** phases:
    - `PERK_SELECTION` (no timer) - Pick 2 perk cards from hand (fan layout)
@@ -53,7 +53,7 @@ npm start            # Run production server
 
 ## Key Architecture Decisions
 - **Server-authoritative**: All game logic in `GameInstance.ts`. Client sends intents, server validates.
-- **Per-player zone layout**: Each player owns a screen zone with their nameplate at the edge and a date-card slot row pulled toward center. Hand-tuned positions for 3–6 players; arc-based fallback for 7–10. Layout logic in `getZone()` in `GamePage.tsx`.
+- **Per-player zone layout**: Each player owns a screen zone with their nameplate at the edge and a date-card slot row pulled toward center. Hand-tuned positions for 3–10 players in `OTHER_LAYOUTS` in `GamePage.tsx`; U-shaped perimeter for 7–10 (left column → top row → right column). Date rows auto-scale down via `getDateScale()` at higher counts (7→0.85, 8→0.8, 9→0.72, 10→0.68). Arc-based fallback only for >10. Layout logic in `getZone()` in `GamePage.tsx`.
 - **No timers on player actions**: PERK_TIMER, RED_FLAG_TIMER, JUDGING_TIMER all set to 0. Only REVEAL (5s) and ROUND_RESULT (8s) have auto-advance delays.
 - **Unique red flag targeting**: Players freely choose who to give a red flag to. Each target receives exactly one red flag (first lock-in wins). The server only offers targets that keep a valid perfect matching for the remaining players (`hasPerfectMatching`/`feasibleTargetsFor` in `GameInstance.ts`), so no one is ever stranded. `game:redflag-targets` broadcasts a per-giver feasible-target map (`targetsByGiver`).
 - **No argument phase**: Removed - game goes directly from REVEAL to JUDGING.

@@ -11,7 +11,8 @@
     "enterRoomCode": "کد اتاق رو وارد کن",
     "howToPlay": "نحوه بازی",
     "play": "بازی",
-    "or": "یا"
+    "or": "یا",
+    "nicknameFirst": "اول اسمت رو بنویس"
   },
   "lobby": {
     "waitingForPlayers": "منتظر بازیکنان...",
