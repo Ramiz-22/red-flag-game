@@ -137,11 +137,10 @@ export default function HomePage() {
                   let val = e.target.value;
                   const match = val.match(/\/room\/([A-Za-z0-9]+)/);
                   if (match) val = match[1];
-                  setRoomCode(val.toUpperCase());
+                  setRoomCode(val.toUpperCase().slice(0, 6));
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname && roomCode.trim().length >= 4) handleJoin(); }}
                 placeholder={t('home.enterRoomCode')}
-                maxLength={6}
                 className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
                            text-white placeholder-gray-500 focus:outline-none focus:border-brand-red/60
                            focus:bg-white/[0.08] transition-all duration-300
