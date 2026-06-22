@@ -35,7 +35,7 @@ type Action =
   | { type: 'PHASE_CHANGED'; payload: PhaseChangedPayload }
   | { type: 'PLAYER_READY'; payload: string[] }
   | { type: 'RED_FLAG_TARGET'; payload: RedFlagTargetPayload }
-  | { type: 'RED_FLAG_TARGETS'; payload: { availableTargets: { socketId: string; nickname: string }[]; playedBy: string[] } }
+  | { type: 'RED_FLAG_TARGETS'; payload: { targetsByGiver: Record<string, { socketId: string; nickname: string }[]>; playedBy: string[] } }
   | { type: 'DATES_REVEALED'; payload: DatesRevealedPayload }
   | { type: 'ROUND_RESULT'; payload: RoundResultPayload }
   | { type: 'GAME_OVER'; payload: GameOverPayload }
@@ -141,7 +141,10 @@ function reducer(state: GameStore, action: Action): GameStore {
       return { ...state, redFlagTarget: action.payload };
 
     case 'RED_FLAG_TARGETS':
-      return { ...state, availableTargets: action.payload.availableTargets };
+      return {
+        ...state,
+        availableTargets: action.payload.targetsByGiver[state.mySocketId ?? ''] ?? [],
+      };
 
     case 'DATES_REVEALED':
       return { ...state, dates: action.payload.dates };
@@ -259,7 +262,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'RED_FLAG_TARGET', payload: data });
     });
 
-    socket.on('game:redflag-targets', (data: { availableTargets: { socketId: string; nickname: string }[]; playedBy: string[] }) => {
+    socket.on('game:redflag-targets', (data: { targetsByGiver: Record<string, { socketId: string; nickname: string }[]>; playedBy: string[] }) => {
       dispatch({ type: 'RED_FLAG_TARGETS', payload: data });
     });
 

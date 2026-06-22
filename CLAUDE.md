@@ -55,7 +55,7 @@ npm start            # Run production server
 - **Server-authoritative**: All game logic in `GameInstance.ts`. Client sends intents, server validates.
 - **Per-player zone layout**: Each player owns a screen zone with their nameplate at the edge and a date-card slot row pulled toward center. Hand-tuned positions for 3–6 players; arc-based fallback for 7–10. Layout logic in `getZone()` in `GamePage.tsx`.
 - **No timers on player actions**: PERK_TIMER, RED_FLAG_TIMER, JUDGING_TIMER all set to 0. Only REVEAL (5s) and ROUND_RESULT (8s) have auto-advance delays.
-- **Free red flag targeting**: Players choose who to give red flags to (not the player to the left). Server broadcasts `game:redflag-targets` with available targets.
+- **Unique red flag targeting**: Players freely choose who to give a red flag to. Each target receives exactly one red flag (first lock-in wins). The server only offers targets that keep a valid perfect matching for the remaining players (`hasPerfectMatching`/`feasibleTargetsFor` in `GameInstance.ts`), so no one is ever stranded. `game:redflag-targets` broadcasts a per-giver feasible-target map (`targetsByGiver`).
 - **No argument phase**: Removed - game goes directly from REVEAL to JUDGING.
 - **Host kick**: Host can kick players from the lobby via `room:kick` event.
 - **Cards are bilingual data**: Both `text.en` and `text.fa` in JSON. Client reads based on language setting.

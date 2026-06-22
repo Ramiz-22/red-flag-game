@@ -16,8 +16,7 @@ export class GameInstance {
   redFlagDeck: Deck | null = null;
 
   perkSelections: Map<string, string[]> = new Map();
-  redFlagIntents: Map<string, { card: Card; targetSocketId: string }> = new Map();
-  redFlagAssignments: Map<string, Card> = new Map(); // targetSocketId -> Card (resolved)
+  redFlagAssignments: Map<string, Card> = new Map(); // targetSocketId -> Card
   redFlagPlayedBy: Set<string> = new Set();
   judgeChoice: string | null = null;
 
@@ -101,7 +100,6 @@ export class GameInstance {
   private startRound() {
     this.roundNumber++;
     this.perkSelections.clear();
-    this.redFlagIntents.clear();
     this.redFlagAssignments.clear();
     this.redFlagPlayedBy.clear();
     this.judgeChoice = null;
@@ -227,12 +225,67 @@ export class GameInstance {
     this.setPhase('RED_FLAG_PLAY' as GamePhase, CONFIG.RED_FLAG_TIMER);
   }
 
+  // Givers who still need to play a red flag.
+  private remainingGivers(): string[] {
+    return this.matchmakers
+      .filter((mm) => !this.redFlagPlayedBy.has(mm.socketId))
+      .map((mm) => mm.socketId);
+  }
+
+  // Matchmakers who have not yet been targeted (can still receive a red flag).
+  private remainingReceivers(): string[] {
+    const taken = new Set(this.redFlagAssignments.keys());
+    return this.matchmakers
+      .filter((mm) => !taken.has(mm.socketId))
+      .map((mm) => mm.socketId);
+  }
+
+  // Can every giver be matched to a distinct receiver, with nobody targeting themselves?
+  private hasPerfectMatching(givers: string[], receivers: string[]): boolean {
+    if (givers.length > receivers.length) return false;
+    const matchR = new Map<string, string>(); // receiver -> giver
+    const tryKuhn = (g: string, visited: Set<string>): boolean => {
+      for (const r of receivers) {
+        if (g === r || visited.has(r)) continue;
+        visited.add(r);
+        const cur = matchR.get(r);
+        if (cur === undefined || tryKuhn(cur, visited)) {
+          matchR.set(r, g);
+          return true;
+        }
+      }
+      return false;
+    };
+    for (const g of givers) {
+      if (!tryKuhn(g, new Set())) return false;
+    }
+    return true;
+  }
+
+  // Targets a giver may pick without stranding any other remaining giver.
+  private feasibleTargetsFor(giverSocketId: string): string[] {
+    const others = this.remainingGivers().filter((g) => g !== giverSocketId);
+    const receivers = this.remainingReceivers();
+    const result: string[] = [];
+    for (const r of receivers) {
+      if (r === giverSocketId) continue;
+      const remaining = receivers.filter((x) => x !== r);
+      if (this.hasPerfectMatching(others, remaining)) result.push(r);
+    }
+    return result;
+  }
+
   private broadcastAvailableTargets() {
-    const targets = this.matchmakers
-      .map((mm) => ({ socketId: mm.socketId, nickname: mm.nickname }));
+    const targetsByGiver: Record<string, { socketId: string; nickname: string }[]> = {};
+    for (const giver of this.remainingGivers()) {
+      targetsByGiver[giver] = this.feasibleTargetsFor(giver).map((sid) => ({
+        socketId: sid,
+        nickname: this.players.get(sid)?.nickname || '',
+      }));
+    }
 
     this.io.to(this.room).emit('game:redflag-targets', {
-      availableTargets: targets,
+      targetsByGiver,
       playedBy: [...this.redFlagPlayedBy],
     });
   }
@@ -241,8 +294,7 @@ export class GameInstance {
     if (this.phase !== ('RED_FLAG_PLAY' as GamePhase)) return false;
     if (socketId === this.judgeSocketId) return false;
     if (this.redFlagPlayedBy.has(socketId)) return false;
-    if (targetSocketId === socketId) return false;
-    if (!this.matchmakers.some((mm) => mm.socketId === targetSocketId)) return false;
+    if (!this.feasibleTargetsFor(socketId).includes(targetSocketId)) return false;
 
     const player = this.players.get(socketId);
     if (!player) return false;
@@ -250,7 +302,7 @@ export class GameInstance {
     const card = player.removeRedFlag(cardId);
     if (!card) return false;
 
-    this.redFlagIntents.set(socketId, { card, targetSocketId });
+    this.redFlagAssignments.set(targetSocketId, card);
     this.redFlagPlayedBy.add(socketId);
     this.lastActivityAt = Date.now();
 
@@ -264,46 +316,21 @@ export class GameInstance {
       this.redFlagPlayedBy.has(mm.socketId)
     );
     if (allPlayed) {
-      this.resolveRedFlags();
       this.advanceToReveal();
     }
     return true;
   }
 
-  private resolveRedFlags() {
-    this.redFlagAssignments.clear();
-    const unassigned: { card: Card }[] = [];
-
-    for (const [, intent] of this.redFlagIntents) {
-      if (!this.redFlagAssignments.has(intent.targetSocketId)) {
-        this.redFlagAssignments.set(intent.targetSocketId, intent.card);
-      } else {
-        unassigned.push({ card: intent.card });
-      }
-    }
-
-    const coveredTargets = new Set(this.redFlagAssignments.keys());
-    const uncovered = this.matchmakers
-      .filter((mm) => !coveredTargets.has(mm.socketId))
-      .map((mm) => mm.socketId);
-
-    for (let i = 0; i < unassigned.length && i < uncovered.length; i++) {
-      this.redFlagAssignments.set(uncovered[i], unassigned[i].card);
-    }
-  }
-
   private autoPlayRedFlags() {
     for (const mm of this.matchmakers) {
       if (this.redFlagPlayedBy.has(mm.socketId)) continue;
-      const availableTargets = this.matchmakers.filter(
-        (t) => t.socketId !== mm.socketId
-      );
-      if (availableTargets.length === 0) continue;
-      const target = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+      const feasible = this.feasibleTargetsFor(mm.socketId);
+      if (feasible.length === 0) continue;
+      const target = feasible[Math.floor(Math.random() * feasible.length)];
       const randomCard = mm.hand.redFlags[0];
       if (randomCard) {
         mm.removeRedFlag(randomCard.id);
-        this.redFlagIntents.set(mm.socketId, { card: randomCard, targetSocketId: target.socketId });
+        this.redFlagAssignments.set(target, randomCard);
         this.redFlagPlayedBy.add(mm.socketId);
       }
     }
