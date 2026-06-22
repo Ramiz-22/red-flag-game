@@ -196,7 +196,7 @@ export default function GamePage() {
                       const isSelf = p.socketId === state.mySocketId;
                       const isPlayerJudge = p.socketId === state.judgeSocketId;
                       const isReady = state.playersReady.includes(p.socketId);
-                      const hasRedFlag = state.dates.some(d => d.matchmakerSocketId === p.socketId && d.redFlags.length > 0);
+                      const hasRedFlag = state.dates.some(d => d.matchmakerSocketId === p.socketId && d.redFlag);
                       const zone = getZone((i - myIndex + total) % total, total);
 
                       if (isSelf && showCardFan) return null;
@@ -289,19 +289,19 @@ export default function GamePage() {
                                     </div>
                                   </motion.div>
                                 ))}
-                                {date.redFlags.length > 0 ? date.redFlags.map((rf, ri) => (
-                                  <motion.div key={rf.id}
+                                {date.redFlag ? (
+                                  <motion.div
                                     initial={{ rotateY: -90, opacity: 0, scale: 0.9 }}
                                     animate={{ rotateY: 0, opacity: 1, scale: 1 }}
-                                    transition={{ delay: i * 0.08 + 0.25 + ri * 0.08, type: 'spring', stiffness: 180, damping: 16 }}
+                                    transition={{ delay: i * 0.08 + 0.25, type: 'spring', stiffness: 180, damping: 16 }}
                                     className="poker-card poker-card-red poker-card-table">
                                     <div className="poker-card-inner">
                                       <div className="poker-card-corner top">🚩</div>
-                                      <div className="poker-card-body" dir="auto">{renderCardText(rf)}</div>
+                                      <div className="poker-card-body" dir="auto">{renderCardText(date.redFlag)}</div>
                                       <div className="poker-card-corner bottom">🚩</div>
                                     </div>
                                   </motion.div>
-                                )) : phase === GamePhase.RED_FLAG_PLAY ? (
+                                ) : phase === GamePhase.RED_FLAG_PLAY ? (
                                   <div className="poker-card poker-card-back poker-card-table">
                                     <div className="poker-card-back-pattern">?</div>
                                   </div>

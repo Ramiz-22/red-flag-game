@@ -16,8 +16,9 @@ export class GameInstance {
   redFlagDeck: Deck | null = null;
 
   perkSelections: Map<string, string[]> = new Map();
-  redFlagAssignments: Map<string, Card[]> = new Map(); // targetSocketId -> Cards
-  redFlagPlayedBy: Set<string> = new Set(); // who has already played a red flag
+  redFlagIntents: Map<string, { card: Card; targetSocketId: string }> = new Map();
+  redFlagAssignments: Map<string, Card> = new Map(); // targetSocketId -> Card (resolved)
+  redFlagPlayedBy: Set<string> = new Set();
   judgeChoice: string | null = null;
 
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -100,6 +101,7 @@ export class GameInstance {
   private startRound() {
     this.roundNumber++;
     this.perkSelections.clear();
+    this.redFlagIntents.clear();
     this.redFlagAssignments.clear();
     this.redFlagPlayedBy.clear();
     this.judgeChoice = null;
@@ -248,9 +250,7 @@ export class GameInstance {
     const card = player.removeRedFlag(cardId);
     if (!card) return false;
 
-    const existing = this.redFlagAssignments.get(targetSocketId) || [];
-    existing.push(card);
-    this.redFlagAssignments.set(targetSocketId, existing);
+    this.redFlagIntents.set(socketId, { card, targetSocketId });
     this.redFlagPlayedBy.add(socketId);
     this.lastActivityAt = Date.now();
 
@@ -264,9 +264,32 @@ export class GameInstance {
       this.redFlagPlayedBy.has(mm.socketId)
     );
     if (allPlayed) {
+      this.resolveRedFlags();
       this.advanceToReveal();
     }
     return true;
+  }
+
+  private resolveRedFlags() {
+    this.redFlagAssignments.clear();
+    const unassigned: { card: Card }[] = [];
+
+    for (const [, intent] of this.redFlagIntents) {
+      if (!this.redFlagAssignments.has(intent.targetSocketId)) {
+        this.redFlagAssignments.set(intent.targetSocketId, intent.card);
+      } else {
+        unassigned.push({ card: intent.card });
+      }
+    }
+
+    const coveredTargets = new Set(this.redFlagAssignments.keys());
+    const uncovered = this.matchmakers
+      .filter((mm) => !coveredTargets.has(mm.socketId))
+      .map((mm) => mm.socketId);
+
+    for (let i = 0; i < unassigned.length && i < uncovered.length; i++) {
+      this.redFlagAssignments.set(uncovered[i], unassigned[i].card);
+    }
   }
 
   private autoPlayRedFlags() {
@@ -280,9 +303,7 @@ export class GameInstance {
       const randomCard = mm.hand.redFlags[0];
       if (randomCard) {
         mm.removeRedFlag(randomCard.id);
-        const existing = this.redFlagAssignments.get(target.socketId) || [];
-        existing.push(randomCard);
-        this.redFlagAssignments.set(target.socketId, existing);
+        this.redFlagIntents.set(mm.socketId, { card: randomCard, targetSocketId: target.socketId });
         this.redFlagPlayedBy.add(mm.socketId);
       }
     }
@@ -313,7 +334,7 @@ export class GameInstance {
         matchmakerSocketId: mm.socketId,
         matchmakerNickname: mm.nickname,
         perks: actualPerks,
-        redFlags: this.redFlagAssignments.get(mm.socketId) || [],
+        redFlag: this.redFlagAssignments.get(mm.socketId) || null,
       };
     });
   }
@@ -388,8 +409,8 @@ export class GameInstance {
       const cards = cardIds.map((id) => this.perkCards.find((c) => c.id === id)!).filter(Boolean);
       this.perkDeck?.discard(cards);
     }
-    for (const [, cards] of this.redFlagAssignments) {
-      this.redFlagDeck?.discard(cards);
+    for (const [, card] of this.redFlagAssignments) {
+      this.redFlagDeck?.discard([card]);
     }
   }
 
