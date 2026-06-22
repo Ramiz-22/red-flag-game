@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../ui/LanguageToggle';
-import CopyLink from '../shared/CopyLink';
 
 interface HeaderProps {
   roomCode?: string;
@@ -11,6 +11,15 @@ interface HeaderProps {
 
 export default function Header({ roomCode, showScore, onToggleScore, onLeave }: HeaderProps) {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyCode = async () => {
+    if (!roomCode) return;
+    const url = `${window.location.origin}/room/${roomCode}`;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-black/20 backdrop-blur-sm">
@@ -19,12 +28,15 @@ export default function Header({ roomCode, showScore, onToggleScore, onLeave }: 
           {t('app.title')}
         </h1>
         {roomCode && (
-          <div className="flex items-center gap-2">
-            <code className="px-2.5 py-1 bg-white/[0.06] rounded-lg text-brand-gold font-mono font-bold text-sm border border-white/[0.06]">
-              {roomCode}
-            </code>
-            <CopyLink roomCode={roomCode} />
-          </div>
+          <button
+            onClick={handleCopyCode}
+            className="px-2.5 py-1 bg-white/[0.06] rounded-lg font-mono font-bold text-sm border border-white/[0.06]
+                       hover:bg-white/[0.1] active:scale-95 transition-all cursor-pointer"
+            style={{ color: copied ? '#4ade80' : '#d4a84b' }}
+            title={t('lobby.copyLink')}
+          >
+            {copied ? `✓ ${t('lobby.copied')}` : roomCode}
+          </button>
         )}
       </div>
       <div className="flex items-center gap-2">
