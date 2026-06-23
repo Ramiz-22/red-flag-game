@@ -59,9 +59,11 @@ npm start            # Run production server
 
 ## Key Architecture Decisions
 - **Server-authoritative**: All game logic in `GameInstance.ts`. Client sends intents, server validates.
-- **Per-player zone layout**: Each non-judge player's nameplate is rendered inside their date-row container — above cards for top/bottom positions, beside cards for left/right columns (so stacked rows never overlap). The judge's nameplate is rendered separately at their seat position since they have no cards. Hand-tuned positions for 3–10 players in `OTHER_LAYOUTS` in `GamePage.tsx`; U-shaped perimeter for 7–10 (left column → top row → right column). Date rows auto-scale down via `getDateScale()` at higher counts (7→0.85, 8→0.8, 9→0.72, 10→0.68). Arc-based fallback only for >10. Layout logic in `getZone()` in `GamePage.tsx`.
-- **Card selection overlay**: Perk fan and red-flag fan are absolute-positioned overlays (`absolute inset-x-0 bottom-0 z-40`), not flex children. This ensures the player zone always gets full viewport height regardless of judge vs matchmaker view.
-- **Responsive card fan**: Fan spread scales with viewport width via `useWindowSize` hook. `minHeight` uses `min(200px, 35vh)` to fit smaller screens.
+- **Per-player zone layout (desktop, ≥700px)**: Each non-judge player's nameplate is rendered inside their date-row container — above cards for top/bottom positions, beside cards for left/right columns (so stacked rows never overlap). The judge's nameplate is rendered separately at their seat position since they have no cards. Hand-tuned positions for 3–10 players in `OTHER_LAYOUTS` in `GamePage.tsx`; U-shaped perimeter for 7–10 (left column → top row → right column). Date rows auto-scale down via `getDateScale()` at higher counts (7→0.85, 8→0.8, 9→0.72, 10→0.68). Arc-based fallback only for >10. Layout logic in `getZone()` in `GamePage.tsx`.
+- **Mobile layout (<700px)**: Completely separate layout branch (`isMobile` flag from `useWindowSize`). Instead of absolute-positioned zones, uses a vertical scrollable list of player date-rows. Judge shown as sticky banner at top with 👑. Each player row is a rounded card with nameplate + date cards centered below. Hand panel is a bottom-docked horizontal scrollable strip (not a fan) for easy touch interaction. Root uses `height: 100dvh` to prevent browser-chrome overflow. Judge taps a player row to pick winner (👆 indicator).
+- **Card selection overlay (desktop)**: Perk fan and red-flag fan are absolute-positioned overlays (`absolute inset-x-0 bottom-0 z-40`), not flex children. This ensures the player zone always gets full viewport height regardless of judge vs matchmaker view.
+- **Card selection panel (mobile)**: Bottom-docked panel with horizontal-scroll card strip + full-width Lock In button. Target selection chips also horizontally scrollable. No fan layout (cards are upright, individually tappable).
+- **Responsive card fan (desktop)**: Fan spread scales with viewport width via `useWindowSize` hook. `minHeight` uses `min(200px, 35vh)` to fit smaller screens.
 - **Nickname persistence**: Nickname is saved to `localStorage` (key: `redflags_nickname`) on create/join and auto-loaded on return to HomePage.
 - **No timers on player actions**: PERK_TIMER, RED_FLAG_TIMER, JUDGING_TIMER all set to 0. Only REVEAL (5s) and ROUND_RESULT (3s) have auto-advance delays.
 - **Unique red flag targeting**: Players freely choose who to give a red flag to. Each target receives exactly one red flag (first lock-in wins). The server only offers targets that keep a valid perfect matching for the remaining players (`hasPerfectMatching`/`feasibleTargetsFor` in `GameInstance.ts`), so no one is ever stranded. `game:redflag-targets` broadcasts a per-giver feasible-target map (`targetsByGiver`).
@@ -92,6 +94,7 @@ npm start            # Run production server
 - `manifest.json`: PWA-ready (standalone, dark theme).
 
 ## Responsive Breakpoints
+- **Layout switch**: `vw < 700px` → mobile vertical list layout; `vw ≥ 700px` → desktop absolute-zone layout.
 - **Desktop** (>1024px): Full-size cards (132x192), table cards (105x150).
 - **Tablet** (641–1024px): Medium cards (112x164), table cards (90x130).
 - **Mobile** (<640px): Compact cards (102x150), table cards (80x114).
@@ -112,7 +115,7 @@ Server → Client: `room:created`, `room:joined`, `room:player-joined`, `room:pl
 - Theme: Dark red/black (`#0f0808` base, `#dc2626` accent)
 - Cards: Poker-style with corners (♥ in red for perks, 🚩 in white for red flags, with enhanced visibility via text-shadow)
 - Hover: Cards scale 1.22x with spring animation (stiffness: 400, damping: 20)
-- Layout: No central table; each player's date cards render in dashed slots near their nameplate
+- Layout: Desktop — no central table; each player's date cards render in dashed slots near their nameplate. Mobile — vertical scrollable list of player rows with cards centered
 - Nameplates: Green background (`bg-green-500/15`) when player confirms cards, with green checkmark (✓) inside the chip. Judge has yellow background (`bg-yellow-500/15`) with crown (👑) inside. Judge nameplate centers horizontally when you are the judge.
 - Scores hidden from nameplates; only shown in scoreboard and final results (white text, not red)
 

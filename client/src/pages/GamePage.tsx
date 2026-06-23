@@ -131,6 +131,7 @@ export default function GamePage() {
   const [lockedIn, setLockedIn] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const { width: vw } = useWindowSize();
+  const isMobile = vw < 700;
 
   const isJudge = state.mySocketId === state.judgeSocketId;
   const phase = state.phase as GamePhase;
@@ -202,7 +203,7 @@ export default function GamePage() {
     : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface-dark relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-surface-dark relative overflow-x-hidden" style={isMobile ? { height: '100dvh', minHeight: '100dvh' } : undefined}>
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,#1a0a0a_0%,#0f0808_40%,#080505_100%)]" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(220,38,38,0.06),transparent_70%)]" />
 
@@ -210,7 +211,7 @@ export default function GamePage() {
         <Header roomCode={state.roomCode || ''} showScore onToggleScore={() => setShowScoreboard(!showScoreboard)} onLeave={() => setShowExitConfirm(true)} />
       </div>
 
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className="flex-1 flex flex-col relative z-10 min-h-0">
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-3">
             <span className="px-3 py-1.5 rounded-lg bg-black/30 border border-white/10 text-sm font-medium text-gray-300">
@@ -236,6 +237,7 @@ export default function GamePage() {
           <GameOverView state={state} sortedPlayers={sortedPlayers} startGame={startGame} handleExitGame={handleExitGame} t={t} />
         ) : (
           <>
+            {!isMobile && (<>
             {/* ============ GAME AREA (per-player zones) ============ */}
             <div className="flex-1 relative min-h-0">
               {(() => {
@@ -513,6 +515,198 @@ export default function GamePage() {
                     </button>
                   ) : (
                     <p className="text-green-400 font-medium animate-pulse">{t('game.waiting')}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            </>)}
+
+            {/* ============ MOBILE LAYOUT (vertical scrollable list) ============ */}
+            {isMobile && (
+              <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
+                {/* Judge banner (sticky at top) */}
+                {(() => {
+                  const judge = state.players.find(p => p.socketId === state.judgeSocketId);
+                  if (!judge) return null;
+                  const isSelf = judge.socketId === state.mySocketId;
+                  return (
+                    <div className="sticky top-0 z-20 flex justify-center py-2 bg-gradient-to-b from-surface-dark via-surface-dark/90 to-transparent">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 text-xs font-medium">
+                        <span className="text-sm leading-none">👑</span>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: getAvatarColor(judge.nickname) }}>
+                          {judge.nickname.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="max-w-[140px] truncate" dir="auto">{judge.nickname}</span>
+                        {isSelf && <span className="text-yellow-400/70 text-[9px]">({t('lobby.you')})</span>}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Player date rows */}
+                <div className="flex flex-col gap-2.5 pt-1 max-w-md mx-auto">
+                  {state.players.map((p, i) => {
+                    if (p.socketId === state.judgeSocketId) return null;
+                    const isSelf = p.socketId === state.mySocketId;
+                    if (isSelf && showCardFan) return null;
+                    const isReady = state.playersReady.includes(p.socketId);
+                    const hasRedFlag = state.dates.some(d => d.matchmakerSocketId === p.socketId && d.redFlag);
+                    const date = state.dates.find(d => d.matchmakerSocketId === p.socketId);
+                    const revealed = !!date && (
+                      phase === GamePhase.RED_FLAG_PLAY ||
+                      phase === GamePhase.REVEAL ||
+                      phase === GamePhase.JUDGING ||
+                      phase === GamePhase.ROUND_RESULT
+                    );
+                    const isWinner = p.socketId === state.roundWinner;
+                    const canPick = phase === GamePhase.JUDGING && isJudge && !lockedIn && !!date;
+                    return (
+                      <motion.div
+                        key={`m-date-${p.socketId}`}
+                        dir="ltr"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        onClick={() => canPick && judgePick(p.socketId)}
+                        className={`rounded-2xl border px-3 py-2.5 transition-colors ${
+                          isWinner
+                            ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_25px_rgba(220,38,38,0.3)]'
+                            : canPick
+                              ? 'border-red-500/40 bg-black/30 cursor-pointer active:scale-[0.98]'
+                              : 'border-white/[0.06] bg-black/20'
+                        }`}
+                      >
+                        {/* Nameplate */}
+                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 mb-2 rounded-full text-xs font-medium border transition-colors duration-300 ${
+                          isReady
+                            ? 'bg-green-500/15 border-green-500/30 text-green-300'
+                            : isSelf
+                              ? 'bg-white/[0.08] border-white/20 text-white'
+                              : 'bg-black/40 border-white/[0.08] text-gray-300'
+                        }`}>
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: getAvatarColor(p.nickname) }}>
+                            {p.nickname.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="max-w-[140px] truncate" dir="auto">{p.nickname}</span>
+                          {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
+                          {hasRedFlag && <span className="text-[9px]">🚩</span>}
+                          {isReady && <span className="text-green-400 font-bold text-[10px]">✓</span>}
+                          {canPick && <span className="text-red-300 text-[10px] ms-0.5">👆</span>}
+                        </div>
+                        {/* Cards */}
+                        {revealed && date ? (
+                          <div className="flex gap-1.5 justify-center flex-wrap">
+                            {date.perks.map(perk => (
+                              <div key={perk.id} className="poker-card poker-card-white poker-card-table">
+                                <div className="poker-card-inner">
+                                  <div className="poker-card-corner top">♥</div>
+                                  <div className="poker-card-body" dir="auto">{renderCardText(perk)}</div>
+                                  <div className="poker-card-corner bottom">♥</div>
+                                </div>
+                              </div>
+                            ))}
+                            {date.redFlag ? (
+                              <div className="poker-card poker-card-red poker-card-table">
+                                <div className="poker-card-inner">
+                                  <div className="poker-card-corner top">🚩</div>
+                                  <div className="poker-card-body" dir="auto">{renderCardText(date.redFlag)}</div>
+                                  <div className="poker-card-corner bottom">🚩</div>
+                                </div>
+                              </div>
+                            ) : phase === GamePhase.RED_FLAG_PLAY ? (
+                              <div className="poker-card poker-card-back poker-card-table">
+                                <div className="poker-card-back-pattern">?</div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="flex gap-1.5 justify-center">
+                            {[0, 1, 2].map(s => <div key={s} className="poker-card-slot" />)}
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Mobile hand panel — perk selection */}
+            {isMobile && showCardFan && phase === GamePhase.PERK_SELECTION && (
+              <div className="shrink-0 border-t border-white/[0.08] bg-black/50 backdrop-blur-md px-3 pt-2 pb-3">
+                <p className="text-center text-[11px] text-gray-400 mb-1.5">{t('game.selected', { count: selectedPerks.length })}</p>
+                <div className="flex gap-2 overflow-x-auto pb-2 px-1 snap-x">
+                  {state.myHand?.perks.map(card => {
+                    const isSelected = selectedPerks.includes(card.id);
+                    return (
+                      <motion.div key={card.id}
+                        onClick={() => handlePerkSelect(card.id)}
+                        animate={{ y: isSelected ? -6 : 0 }}
+                        className={`poker-card poker-card-white shrink-0 snap-center cursor-pointer ${isSelected ? 'ring-2 ring-red-400 shadow-[0_0_20px_rgba(220,38,38,0.4)]' : ''} ${lockedIn ? 'pointer-events-none opacity-50' : ''}`}>
+                        <div className="poker-card-inner">
+                          <div className="poker-card-corner top">♥</div>
+                          <div className="poker-card-body" dir="auto">{renderCardText(card)}</div>
+                          <div className="poker-card-corner bottom">♥</div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 text-center">
+                  {!lockedIn ? (
+                    <button onClick={handlePerkLockIn} disabled={selectedPerks.length !== 2} aria-label={t('game.lockIn')} className="btn-primary w-full py-3 text-base">{t('game.lockIn')}</button>
+                  ) : (
+                    <p className="text-green-400 font-medium animate-pulse text-sm">{t('game.waiting')}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Mobile hand panel — red flag play */}
+            {isMobile && showCardFan && phase === GamePhase.RED_FLAG_PLAY && (
+              <div className="shrink-0 border-t border-white/[0.08] bg-black/50 backdrop-blur-md px-3 pt-2 pb-3">
+                {!lockedIn && (
+                  <div className="flex gap-2 overflow-x-auto pb-2 mb-1 items-center">
+                    <span className="text-[11px] text-gray-400 shrink-0 me-1">{t('game.chooseTarget')}:</span>
+                    {state.availableTargets
+                      .filter(tgt => tgt.socketId !== state.mySocketId)
+                      .map(tgt => (
+                        <button key={tgt.socketId} onClick={() => setSelectedTarget(tgt.socketId)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium shrink-0 transition-all ${
+                            selectedTarget === tgt.socketId
+                              ? 'bg-red-500/20 border-red-500/50 text-red-300 shadow-[0_0_12px_rgba(220,38,38,0.3)]'
+                              : 'bg-black/30 border-white/10 text-gray-300'
+                          }`}>
+                          <div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: getAvatarColor(tgt.nickname) }}>
+                            {tgt.nickname.charAt(0).toUpperCase()}
+                          </div>
+                          {tgt.nickname}
+                        </button>
+                      ))}
+                  </div>
+                )}
+                <div className="flex gap-2 overflow-x-auto pb-2 px-1 snap-x">
+                  {state.myHand?.redFlags.map(card => {
+                    const isSelected = selectedRedFlag === card.id;
+                    return (
+                      <motion.div key={card.id}
+                        onClick={() => !lockedIn && setSelectedRedFlag(card.id)}
+                        animate={{ y: isSelected ? -6 : 0 }}
+                        className={`poker-card poker-card-red shrink-0 snap-center cursor-pointer ${isSelected ? 'ring-2 ring-white/70 shadow-[0_0_20px_rgba(220,38,38,0.6)]' : ''} ${lockedIn ? 'pointer-events-none opacity-50' : ''}`}>
+                        <div className="poker-card-inner">
+                          <div className="poker-card-corner top">🚩</div>
+                          <div className="poker-card-body" dir="auto">{renderCardText(card)}</div>
+                          <div className="poker-card-corner bottom">🚩</div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 text-center">
+                  {!lockedIn ? (
+                    <button onClick={handleRedFlagLockIn} disabled={!selectedRedFlag || !selectedTarget} aria-label={t('game.lockIn')} className="btn-primary w-full py-3 text-base">{t('game.lockIn')}</button>
+                  ) : (
+                    <p className="text-green-400 font-medium animate-pulse text-sm">{t('game.waiting')}</p>
                   )}
                 </div>
               </div>
