@@ -1,15 +1,17 @@
 import type { Socket } from 'socket.io';
 import type { GameManager } from '../../game/GameManager.js';
 import { CONFIG } from '../../config.js';
+import { sanitizeNickname } from '../../utils/sanitize.js';
 
 export function registerRoomHandlers(socket: Socket, gm: GameManager) {
   socket.on('room:create', ({ nickname }: { nickname: string }) => {
-    if (!nickname || nickname.trim().length < 2 || nickname.trim().length > 15) {
+    const clean = sanitizeNickname(nickname);
+    if (!clean) {
       socket.emit('room:error', { message: 'Invalid nickname', code: 'INVALID_NICKNAME' });
       return;
     }
 
-    const game = gm.createRoom(socket.id!, nickname.trim());
+    const game = gm.createRoom(socket.id!, clean);
     socket.join(game.code);
 
     socket.emit('room:created', {
@@ -27,7 +29,8 @@ export function registerRoomHandlers(socket: Socket, gm: GameManager) {
   });
 
   socket.on('room:join', ({ roomCode, nickname }: { roomCode: string; nickname: string }) => {
-    if (!nickname || nickname.trim().length < 2 || nickname.trim().length > 15) {
+    const clean = sanitizeNickname(nickname);
+    if (!clean) {
       socket.emit('room:error', { message: 'Invalid nickname', code: 'INVALID_NICKNAME' });
       return;
     }
@@ -49,14 +52,14 @@ export function registerRoomHandlers(socket: Socket, gm: GameManager) {
     }
 
     const nickTaken = [...existing.players.values()].some(
-      (p) => p.nickname.toLowerCase() === nickname.trim().toLowerCase()
+      (p) => p.nickname.toLowerCase() === clean.toLowerCase()
     );
     if (nickTaken) {
       socket.emit('room:error', { message: 'Nickname taken', code: 'NICKNAME_TAKEN' });
       return;
     }
 
-    gm.joinRoom(roomCode, socket.id!, nickname.trim());
+    gm.joinRoom(roomCode, socket.id!, clean);
     socket.join(roomCode);
 
     const players = [...existing.players.values()].map((p) => p.toPublic());
@@ -85,6 +88,7 @@ export function registerRoomHandlers(socket: Socket, gm: GameManager) {
   });
 
   socket.on('room:kick', ({ targetSocketId }: { targetSocketId: string }) => {
+    if (typeof targetSocketId !== 'string') return;
     const game = gm.getGameForSocket(socket.id!);
     if (!game) return;
 

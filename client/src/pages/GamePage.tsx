@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useWindowSize } from '../hooks/useWindowSize';
 import Header from '../components/layout/Header';
 import Toast from '../components/ui/Toast';
 import { GamePhase } from '@shared/types';
@@ -129,6 +130,7 @@ export default function GamePage() {
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [lockedIn, setLockedIn] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const { width: vw } = useWindowSize();
 
   const isJudge = state.mySocketId === state.judgeSocketId;
   const phase = state.phase as GamePhase;
@@ -410,13 +412,13 @@ export default function GamePage() {
             {phase === GamePhase.PERK_SELECTION && !isJudge && (
               <div className="absolute inset-x-0 bottom-0 z-40 pb-4 px-4">
                 <p className="text-center text-xs text-gray-500 mb-2">{t('game.selected', { count: selectedPerks.length })}</p>
-                <div className="relative flex justify-center items-end mx-auto max-w-4xl w-full" style={{ minHeight: '200px' }}>
+                <div className="relative flex justify-center items-end mx-auto max-w-4xl w-full" style={{ minHeight: 'min(200px, 35vh)' }}>
                   {state.myHand?.perks.map((card, i, arr) => {
                     const total = arr.length;
                     const mid = (total - 1) / 2;
                     const offset = i - mid;
                     const angle = offset * 3.5;
-                    const translateX = offset * 52;
+                    const translateX = offset * Math.min(52, vw / 14);
                     const translateY = Math.abs(offset) * 5;
                     const isSelected = selectedPerks.includes(card.id);
                     return (
@@ -441,7 +443,7 @@ export default function GamePage() {
                 </div>
                 <div className="mt-6 text-center">
                   {!lockedIn ? (
-                    <button onClick={handlePerkLockIn} disabled={selectedPerks.length !== 2} className="btn-primary px-12 py-3 text-lg">{t('game.lockIn')}</button>
+                    <button onClick={handlePerkLockIn} disabled={selectedPerks.length !== 2} aria-label={t('game.lockIn')} className="btn-primary px-12 py-3 text-lg">{t('game.lockIn')}</button>
                   ) : (
                     <p className="text-green-400 font-medium animate-pulse">{t('game.waiting')}</p>
                   )}
@@ -478,13 +480,13 @@ export default function GamePage() {
                   </div>
                 )}
 
-                <div className="relative flex justify-center items-end mx-auto max-w-3xl w-full" style={{ minHeight: '200px' }}>
+                <div className="relative flex justify-center items-end mx-auto max-w-3xl w-full" style={{ minHeight: 'min(200px, 35vh)' }}>
                   {state.myHand?.redFlags.map((card, i, arr) => {
                     const total = arr.length;
                     const mid = (total - 1) / 2;
                     const offset = i - mid;
                     const angle = offset * 5;
-                    const translateX = offset * 75;
+                    const translateX = offset * Math.min(75, vw / 10);
                     const translateY = Math.abs(offset) * 3;
                     const isSelected = selectedRedFlag === card.id;
                     return (
@@ -510,7 +512,7 @@ export default function GamePage() {
 
                 <div className="mt-6 text-center">
                   {!lockedIn ? (
-                    <button onClick={handleRedFlagLockIn} disabled={!selectedRedFlag || !selectedTarget} className="btn-primary px-12 py-3 text-lg">
+                    <button onClick={handleRedFlagLockIn} disabled={!selectedRedFlag || !selectedTarget} aria-label={t('game.lockIn')} className="btn-primary px-12 py-3 text-lg">
                       {t('game.lockIn')}
                     </button>
                   ) : (

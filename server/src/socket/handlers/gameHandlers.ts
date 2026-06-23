@@ -22,6 +22,10 @@ export function registerGameHandlers(socket: Socket, gm: GameManager) {
   });
 
   socket.on('game:select-perks', ({ cardIds }: { cardIds: string[] }) => {
+    if (!Array.isArray(cardIds) || !cardIds.every(id => typeof id === 'string')) {
+      socket.emit('room:error', { message: 'Invalid input', code: 'INVALID_CARDS' });
+      return;
+    }
     const game = gm.getGameForSocket(socket.id!);
     if (!game) return;
 
@@ -32,6 +36,10 @@ export function registerGameHandlers(socket: Socket, gm: GameManager) {
   });
 
   socket.on('game:play-redflag', ({ cardId, targetSocketId }: { cardId: string; targetSocketId: string }) => {
+    if (typeof cardId !== 'string' || typeof targetSocketId !== 'string') {
+      socket.emit('room:error', { message: 'Invalid input', code: 'INVALID_CARDS' });
+      return;
+    }
     const game = gm.getGameForSocket(socket.id!);
     if (!game) return;
 
@@ -42,6 +50,10 @@ export function registerGameHandlers(socket: Socket, gm: GameManager) {
   });
 
   socket.on('game:judge-pick', ({ winnerSocketId }: { winnerSocketId: string }) => {
+    if (typeof winnerSocketId !== 'string') {
+      socket.emit('room:error', { message: 'Invalid input', code: 'NOT_YOUR_TURN' });
+      return;
+    }
     const game = gm.getGameForSocket(socket.id!);
     if (!game) return;
 

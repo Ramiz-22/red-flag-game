@@ -173,6 +173,9 @@ export class GameInstance {
       case 'JUDGING' as GamePhase:
         this.autoJudge();
         break;
+      case 'ROUND_RESULT' as GamePhase:
+        this.checkGameEnd();
+        break;
     }
   }
 
@@ -386,12 +389,6 @@ export class GameInstance {
     });
 
     this.setPhase('ROUND_RESULT' as GamePhase, CONFIG.ROUND_RESULT_TIMER);
-
-    setTimeout(() => {
-      if (this.phase === ('ROUND_RESULT' as GamePhase)) {
-        this.checkGameEnd();
-      }
-    }, CONFIG.ROUND_RESULT_TIMER * 1000);
 
     return true;
   }

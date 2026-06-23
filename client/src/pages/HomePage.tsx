@@ -105,6 +105,7 @@ export default function HomePage() {
                 onChange={(e) => { setNickname(e.target.value); setShowNicknameHint(false); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && isValidNickname) { setMode('create'); handleCreate(); } }}
                 placeholder={t('home.enterNickname')}
+                aria-label={t('home.enterNickname')}
                 maxLength={15}
                 className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
                            text-white placeholder-gray-500 focus:outline-none focus:border-brand-red/60
@@ -149,6 +150,7 @@ export default function HomePage() {
                   }
                 }}
                 placeholder={t('home.enterRoomCode')}
+                aria-label={t('home.enterRoomCode')}
                 className="w-full px-5 py-3.5 bg-white/[0.06] border border-white/10 rounded-xl
                            text-white placeholder-gray-500 focus:outline-none focus:border-brand-red/60
                            focus:bg-white/[0.08] transition-all duration-300

@@ -299,6 +299,52 @@
     }
   }
 
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .poker-card {
+      width: 112px;
+      height: 164px;
+    }
+    .poker-card-body {
+      font-size: 11px;
+      padding: 16px 7px;
+    }
+    .poker-card-table {
+      width: 90px;
+      height: 130px;
+    }
+    .poker-card-table .poker-card-body {
+      font-size: 10px;
+      padding: 12px 5px;
+    }
+    .poker-card-slot {
+      width: 90px;
+      height: 130px;
+    }
+  }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    .poker-card {
+      width: 85px;
+      height: 124px;
+    }
+    .poker-card-body {
+      font-size: 9px;
+      padding: 10px 4px;
+    }
+    .poker-card-table {
+      width: 68px;
+      height: 100px;
+    }
+    .poker-card-table .poker-card-body {
+      font-size: 8px;
+      padding: 8px 3px;
+    }
+    .poker-card-slot {
+      width: 68px;
+      height: 100px;
+    }
+  }
+
   .btn-primary {
     @apply text-white font-bold py-3 px-6 rounded-xl
            transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;

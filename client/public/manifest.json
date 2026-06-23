@@ -1,0 +1,12 @@
+{
+  "name": "Red Flags - The Game of Terrible Dates",
+  "short_name": "Red Flags",
+  "description": "Online multiplayer card game of terrible dates",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0808",
+  "theme_color": "#0f0808",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

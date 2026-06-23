@@ -30,6 +30,7 @@ export default function Header({ roomCode, showScore, onToggleScore, onLeave }: 
         {roomCode && (
           <button
             onClick={handleCopyCode}
+            aria-label={t('lobby.copyLink')}
             className="px-2.5 py-1 bg-white/[0.06] rounded-lg font-mono font-bold text-sm border border-white/[0.06]
                        hover:bg-white/[0.1] active:scale-95 transition-all cursor-pointer"
             style={{ color: copied ? '#4ade80' : '#d4a84b' }}
@@ -43,6 +44,7 @@ export default function Header({ roomCode, showScore, onToggleScore, onLeave }: 
         {showScore !== undefined && (
           <button
             onClick={onToggleScore}
+            aria-label="Scoreboard"
             className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.06] text-sm
                        hover:bg-white/[0.1] transition-all"
           >

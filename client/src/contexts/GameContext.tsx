@@ -138,7 +138,7 @@ function reducer(state: GameStore, action: Action): GameStore {
       return { ...state, playersReady: action.payload };
 
     case 'RED_FLAG_TARGET':
-      return { ...state, redFlagTarget: action.payload };
+      return { ...state, redFlagTarget: { socketId: action.payload.targetSocketId, nickname: action.payload.targetNickname } };
 
     case 'RED_FLAG_TARGETS':
       return {
