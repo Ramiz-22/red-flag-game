@@ -13,7 +13,7 @@ export default function HomePage() {
   const [searchParams] = useSearchParams();
   const { state, createRoom, joinRoom, clearError } = useGame();
 
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(() => localStorage.getItem('redflags_nickname') || '');
   const [roomCode, setRoomCode] = useState(searchParams.get('room') || '');
   const [mode, setMode] = useState<'home' | 'create' | 'join'>(
     searchParams.get('room') ? 'join' : 'home'
@@ -29,11 +29,13 @@ export default function HomePage() {
 
   const handleCreate = () => {
     if (nickname.trim().length < 2) return;
+    localStorage.setItem('redflags_nickname', nickname.trim());
     createRoom(nickname.trim());
   };
 
   const handleJoin = () => {
     if (nickname.trim().length < 2 || roomCode.trim().length < 4) return;
+    localStorage.setItem('redflags_nickname', nickname.trim());
     joinRoom(roomCode.trim(), nickname.trim());
   };
 

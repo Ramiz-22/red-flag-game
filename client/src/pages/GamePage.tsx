@@ -97,7 +97,7 @@ function getDateScale(total: number): number {
 // Position of a player relative to "you". relativeIndex 0 is always you (bottom).
 function getZone(relativeIndex: number, total: number): Zone {
   if (relativeIndex === 0) {
-    return { seat: { x: 50, y: 95 }, date: { x: 50, y: 72 }, edge: 'bottom' };
+    return { seat: { x: 50, y: 87 }, date: { x: 50, y: 72 }, edge: 'bottom' };
   }
 
   const others = OTHER_LAYOUTS[total];
@@ -241,15 +241,13 @@ export default function GamePage() {
                 const dateScale = getDateScale(total);
                 return (
                   <>
-                    {/* Player nameplates at their zone edge */}
+                    {/* Judge nameplate (rendered separately since judge has no date cards) */}
                     {state.players.map((p, i) => {
-                      const isSelf = p.socketId === state.mySocketId;
                       const isPlayerJudge = p.socketId === state.judgeSocketId;
-                      const isReady = state.playersReady.includes(p.socketId);
-                      const hasRedFlag = state.dates.some(d => d.matchmakerSocketId === p.socketId && d.redFlag);
-                      const zone = getZone((i - myIndex + total) % total, total);
+                      if (!isPlayerJudge) return null;
 
-                      if (isSelf && showCardFan) return null;
+                      const isSelf = p.socketId === state.mySocketId;
+                      const zone = getZone((i - myIndex + total) % total, total);
 
                       return (
                         <motion.div
@@ -261,24 +259,12 @@ export default function GamePage() {
                           transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 22 }}
                         >
                           <div className="flex flex-col items-center gap-1">
-                            {isPlayerJudge && (
-                              <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                                className="text-xl leading-none">👑</motion.div>
-                            )}
-
-                            {!isPlayerJudge && isReady && (
-                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
-                                className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-lg">
-                                ✓
-                              </motion.div>
-                            )}
-
+                            <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                              className="text-xl leading-none">👑</motion.div>
                             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-medium border whitespace-nowrap ${
-                              isPlayerJudge
-                                ? 'bg-red-500/15 border-red-500/25 text-red-300'
-                                : isSelf
-                                ? 'bg-white/[0.08] border-white/20 text-white'
-                                : 'bg-black/50 border-white/[0.08] text-gray-300'
+                              isSelf
+                                ? 'bg-red-500/15 border-red-500/25 text-red-300 ring-1 ring-white/20'
+                                : 'bg-red-500/15 border-red-500/25 text-red-300'
                             }`}>
                               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
                                 style={{ backgroundColor: getAvatarColor(p.nickname) }}>
@@ -287,18 +273,20 @@ export default function GamePage() {
                               <span className="max-w-[70px] truncate">{p.nickname}</span>
                               {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
                               {p.score > 0 && <span className="text-red-400 font-bold">{p.score}</span>}
-                              {hasRedFlag && <span className="text-[9px]">🚩</span>}
                             </div>
                           </div>
                         </motion.div>
                       );
                     })}
 
-                    {/* Each non-judge player's date row, in front of their seat */}
+                    {/* Each non-judge player's nameplate + date row */}
                     {state.players.map((p, i) => {
                       const isPlayerJudge = p.socketId === state.judgeSocketId;
                       if (isPlayerJudge) return null;
 
+                      const isSelf = p.socketId === state.mySocketId;
+                      const isReady = state.playersReady.includes(p.socketId);
+                      const hasRedFlag = state.dates.some(d => d.matchmakerSocketId === p.socketId && d.redFlag);
                       const zone = getZone((i - myIndex + total) % total, total);
                       const date = state.dates.find(d => d.matchmakerSocketId === p.socketId);
                       const revealed = !!date && (
@@ -310,12 +298,57 @@ export default function GamePage() {
                       const isWinner = p.socketId === state.roundWinner;
                       const canPick = phase === GamePhase.JUDGING && isJudge && !lockedIn && !!date;
 
+                      // Hide self entirely while the card fan is open (it occupies the center).
+                      if (isSelf && showCardFan) return null;
+
+                      // Side-column players get their name beside the cards (toward the
+                      // screen edge) so stacked rows never overlap; top/bottom go above.
+                      const flexDir =
+                        zone.edge === 'left' ? 'flex-row' :
+                        zone.edge === 'right' ? 'flex-row-reverse' :
+                        'flex-col';
+                      const nameMargin =
+                        zone.edge === 'left' ? 'mr-2' :
+                        zone.edge === 'right' ? 'ml-2' :
+                        'mb-2';
+
                       return (
                         <div
                           key={`date-${p.socketId}`}
-                          className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+                          dir="ltr"
+                          className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 flex items-center ${flexDir}`}
                           style={{ left: `${zone.date.x}%`, top: `${zone.date.y}%` }}
                         >
+                          {/* Nameplate beside / above the cards */}
+                          <motion.div
+                            className={`${nameMargin} z-20 shrink-0`}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 22 }}
+                          >
+                            <div className="flex flex-col items-center gap-1">
+                              {isReady && (
+                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
+                                  className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-lg">
+                                  ✓
+                                </motion.div>
+                              )}
+                              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-medium border whitespace-nowrap ${
+                                isSelf
+                                  ? 'bg-white/[0.08] border-white/20 text-white'
+                                  : 'bg-black/50 border-white/[0.08] text-gray-300'
+                              }`}>
+                                <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                  style={{ backgroundColor: getAvatarColor(p.nickname) }}>
+                                  {p.nickname.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="max-w-[70px] truncate" dir="auto">{p.nickname}</span>
+                                {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
+                                {p.score > 0 && <span className="text-red-400 font-bold">{p.score}</span>}
+                                {hasRedFlag && <span className="text-[9px]">🚩</span>}
+                              </div>
+                            </div>
+                          </motion.div>
                           {revealed && date ? (
                             <motion.div
                               className={canPick ? 'cursor-pointer' : ''}
@@ -375,7 +408,7 @@ export default function GamePage() {
             {/* ============ CARD SELECTION (below table) ============ */}
 
             {phase === GamePhase.PERK_SELECTION && !isJudge && (
-              <div className="shrink-0 pb-6 px-4">
+              <div className="absolute inset-x-0 bottom-0 z-40 pb-4 px-4">
                 <p className="text-center text-xs text-gray-500 mb-2">{t('game.selected', { count: selectedPerks.length })}</p>
                 <div className="relative flex justify-center items-end mx-auto max-w-4xl w-full" style={{ minHeight: '200px' }}>
                   {state.myHand?.perks.map((card, i, arr) => {
@@ -417,7 +450,7 @@ export default function GamePage() {
             )}
 
             {phase === GamePhase.RED_FLAG_PLAY && !isJudge && (
-              <div className="shrink-0 px-4 pb-6">
+              <div className="absolute inset-x-0 bottom-0 z-40 px-4 pb-4">
                 {!lockedIn && (
                   <div className="flex justify-center gap-2 mb-3 flex-wrap relative z-30">
                     <span className="text-xs text-gray-500 self-center me-2">{t('game.chooseTarget')}:</span>
