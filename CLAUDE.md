@@ -54,7 +54,7 @@ npm start            # Run production server
    - `RED_FLAG_PLAY` (no timer) - Choose a target + play 1 red flag (free choice, not fixed)
    - `REVEAL` (5s auto) - Cards flip on table
    - `JUDGING` (no timer) - Judge picks best date
-   - `ROUND_RESULT` (8s auto) - Winner shown
+   - `ROUND_RESULT` (3s auto) - Winner shown
    - Repeat until 7 points → `GAME_OVER`
 
 ## Key Architecture Decisions
@@ -63,7 +63,7 @@ npm start            # Run production server
 - **Card selection overlay**: Perk fan and red-flag fan are absolute-positioned overlays (`absolute inset-x-0 bottom-0 z-40`), not flex children. This ensures the player zone always gets full viewport height regardless of judge vs matchmaker view.
 - **Responsive card fan**: Fan spread scales with viewport width via `useWindowSize` hook. `minHeight` uses `min(200px, 35vh)` to fit smaller screens.
 - **Nickname persistence**: Nickname is saved to `localStorage` (key: `redflags_nickname`) on create/join and auto-loaded on return to HomePage.
-- **No timers on player actions**: PERK_TIMER, RED_FLAG_TIMER, JUDGING_TIMER all set to 0. Only REVEAL (5s) and ROUND_RESULT (8s) have auto-advance delays.
+- **No timers on player actions**: PERK_TIMER, RED_FLAG_TIMER, JUDGING_TIMER all set to 0. Only REVEAL (5s) and ROUND_RESULT (3s) have auto-advance delays.
 - **Unique red flag targeting**: Players freely choose who to give a red flag to. Each target receives exactly one red flag (first lock-in wins). The server only offers targets that keep a valid perfect matching for the remaining players (`hasPerfectMatching`/`feasibleTargetsFor` in `GameInstance.ts`), so no one is ever stranded. `game:redflag-targets` broadcasts a per-giver feasible-target map (`targetsByGiver`).
 - **No argument phase**: Removed - game goes directly from REVEAL to JUDGING.
 - **Host kick**: Host can kick players from the lobby via `room:kick` event.
@@ -110,10 +110,11 @@ Server → Client: `room:created`, `room:joined`, `room:player-joined`, `room:pl
 
 ## Design
 - Theme: Dark red/black (`#0f0808` base, `#dc2626` accent)
-- Cards: Poker-style with corners (♥ for perks, 🚩 for red flags)
+- Cards: Poker-style with corners (♥ in red for perks, 🚩 in white for red flags, with enhanced visibility via text-shadow)
 - Hover: Cards scale 1.22x with spring animation (stiffness: 400, damping: 20)
 - Layout: No central table; each player's date cards render in dashed slots near their nameplate
-- No golden/yellow accents - pure red/white/black
+- Nameplates: Green background (`bg-green-500/15`) when player confirms cards, with green checkmark (✓) inside the chip. Judge has yellow background (`bg-yellow-500/15`) with crown (👑) inside. Judge nameplate centers horizontally when you are the judge.
+- Scores hidden from nameplates; only shown in scoreboard and final results (white text, not red)
 
 ## Conventions
 - Farsi translations in `client/src/i18n/fa.json` - keep casual/informal tone

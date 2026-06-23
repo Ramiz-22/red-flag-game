@@ -41,7 +41,7 @@
     top: 8px;
     right: 10px;
     font-size: 14px;
-    color: rgba(212, 175, 55, 0.35);
+    color: rgba(220, 38, 38, 0.35);
   }
 
   [dir='rtl'] .card-perk::after {
@@ -84,7 +84,7 @@
     top: 8px;
     right: 10px;
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   [dir='rtl'] .card-redflag::after {
@@ -206,11 +206,12 @@
   }
 
   .poker-card-white .poker-card-corner {
-    color: #b8860b;
+    color: #dc2626;
   }
 
   .poker-card-red .poker-card-corner {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 1);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 
   .poker-card-body {

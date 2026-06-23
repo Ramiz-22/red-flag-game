@@ -250,34 +250,33 @@ export default function GamePage() {
 
                       const isSelf = p.socketId === state.mySocketId;
                       const zone = getZone((i - myIndex + total) % total, total);
+                      const judgeX = isSelf ? 50 : zone.seat.x;
+                      const judgeY = isSelf ? 88 : zone.seat.y;
 
                       return (
-                        <motion.div
+                        <div
                           key={p.socketId}
                           className="absolute -translate-x-1/2 -translate-y-1/2 z-20"
-                          style={{ left: `${zone.seat.x}%`, top: `${zone.seat.y}%` }}
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 22 }}
+                          style={{ left: `${judgeX}%`, top: `${judgeY}%` }}
                         >
-                          <div className="flex flex-col items-center gap-1">
-                            <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                              className="text-xl leading-none">👑</motion.div>
-                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-medium border whitespace-nowrap ${
+                          <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 22 }}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-medium border whitespace-nowrap ${
                               isSelf
-                                ? 'bg-red-500/15 border-red-500/25 text-red-300 ring-1 ring-white/20'
-                                : 'bg-red-500/15 border-red-500/25 text-red-300'
+                                ? 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300 ring-1 ring-white/20'
+                                : 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300'
                             }`}>
+                              <span className="text-sm leading-none">👑</span>
                               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
                                 style={{ backgroundColor: getAvatarColor(p.nickname) }}>
                                 {p.nickname.charAt(0).toUpperCase()}
                               </div>
                               <span className="max-w-[70px] truncate">{p.nickname}</span>
                               {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
-                              {p.score > 0 && <span className="text-red-400 font-bold">{p.score}</span>}
-                            </div>
-                          </div>
-                        </motion.div>
+                          </motion.div>
+                        </div>
                       );
                     })}
 
@@ -328,17 +327,12 @@ export default function GamePage() {
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 22 }}
                           >
-                            <div className="flex flex-col items-center gap-1">
-                              {isReady && (
-                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
-                                  className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold shadow-lg">
-                                  ✓
-                                </motion.div>
-                              )}
-                              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-medium border whitespace-nowrap ${
-                                isSelf
-                                  ? 'bg-white/[0.08] border-white/20 text-white'
-                                  : 'bg-black/50 border-white/[0.08] text-gray-300'
+                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-medium border whitespace-nowrap transition-colors duration-300 ${
+                                isReady
+                                  ? 'bg-green-500/15 border-green-500/30 text-green-300'
+                                  : isSelf
+                                    ? 'bg-white/[0.08] border-white/20 text-white'
+                                    : 'bg-black/50 border-white/[0.08] text-gray-300'
                               }`}>
                                 <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
                                   style={{ backgroundColor: getAvatarColor(p.nickname) }}>
@@ -346,10 +340,12 @@ export default function GamePage() {
                                 </div>
                                 <span className="max-w-[70px] truncate" dir="auto">{p.nickname}</span>
                                 {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
-                                {p.score > 0 && <span className="text-red-400 font-bold">{p.score}</span>}
                                 {hasRedFlag && <span className="text-[9px]">🚩</span>}
+                                {isReady && (
+                                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
+                                    className="text-green-400 font-bold text-[10px]">✓</motion.span>
+                                )}
                               </div>
-                            </div>
                           </motion.div>
                           {revealed && date ? (
                             <motion.div
@@ -596,7 +592,7 @@ export default function GamePage() {
                     style={{ backgroundColor: getAvatarColor(p.nickname) }}>{p.nickname.charAt(0).toUpperCase()}</div>
                   <span className="flex-1 text-sm font-medium">{p.nickname}</span>
                   {p.socketId === state.judgeSocketId && <span className="text-xs">👑</span>}
-                  <span className="text-red-400 font-bold text-sm">{p.score}</span>
+                  <span className="text-white font-bold text-sm">{p.score}</span>
                 </div>
               ))}
             </motion.div>
@@ -644,7 +640,7 @@ function GameOverView({ state, sortedPlayers, startGame, handleExitGame, t }: an
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md"
                 style={{ backgroundColor: getAvatarColor(p.nickname) }}>{p.nickname.charAt(0).toUpperCase()}</div>
               <span className="flex-1 font-medium">{p.nickname}</span>
-              <span className="text-red-400 font-bold">{t('results.score', { score: p.score })}</span>
+              <span className="text-white font-bold">{t('results.score', { score: p.score })}</span>
             </div>
           ))}
         </div>
