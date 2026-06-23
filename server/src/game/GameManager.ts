@@ -16,6 +16,7 @@ function generateRoomCode(): string {
 export class GameManager {
   private games: Map<string, GameInstance> = new Map();
   private socketToRoom: Map<string, string> = new Map();
+  private pendingToRoom: Map<string, string> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor(
@@ -39,15 +40,6 @@ export class GameManager {
     return game;
   }
 
-  joinRoom(code: string, socketId: string, nickname: string): GameInstance | null {
-    const game = this.games.get(code);
-    if (!game) return null;
-
-    game.addPlayer(socketId, nickname);
-    this.socketToRoom.set(socketId, code);
-    return game;
-  }
-
   getGame(code: string): GameInstance | undefined {
     return this.games.get(code);
   }
@@ -62,27 +54,28 @@ export class GameManager {
     this.socketToRoom.delete(socketId);
   }
 
+  // Track a socket waiting for host approval (not yet a player).
+  addPending(socketId: string, code: string) {
+    this.pendingToRoom.set(socketId, code);
+  }
+
+  removePending(socketId: string): string | undefined {
+    const code = this.pendingToRoom.get(socketId);
+    this.pendingToRoom.delete(socketId);
+    return code;
+  }
+
+  // Promote an approved pending socket into the room's active socket mapping.
+  bindSocket(socketId: string, code: string) {
+    this.socketToRoom.set(socketId, code);
+  }
+
   getIO() {
     return this.io;
   }
 
-  leaveRoom(socketId: string): { game: GameInstance; newHostSocketId?: string } | null {
-    const code = this.socketToRoom.get(socketId);
-    if (!code) return null;
-
-    const game = this.games.get(code);
-    if (!game) return null;
-
-    const newHostSocketId = game.removePlayer(socketId);
-    this.socketToRoom.delete(socketId);
-
-    if (game.players.size === 0) {
-      game.destroy();
-      this.games.delete(code);
-      return null;
-    }
-
-    return { game, newHostSocketId };
+  removeGame(code: string) {
+    this.games.delete(code);
   }
 
   private cleanupStaleRooms() {

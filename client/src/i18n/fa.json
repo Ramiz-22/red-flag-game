@@ -12,7 +12,11 @@
     "howToPlay": "نحوه بازی",
     "play": "بازی",
     "or": "یا",
-    "nicknameFirst": "اول اسمت رو بنویس"
+    "nicknameFirst": "اول اسمت رو بنویس",
+    "waitingApproval": "منتظر تایید",
+    "waitingApprovalDesc": "صاحب روم باید بهت اجازه ورود بده. یه کم صبر کن!",
+    "cancelRequest": "لغو درخواست",
+    "requestRejected": "درخواست ورودت رد شد"
   },
   "lobby": {
     "waitingForPlayers": "منتظر بازیکنان...",
@@ -24,8 +28,13 @@
     "copied": "کپی شد!",
     "copyLink": "کپی لینک",
     "host": "میزبان",
+    "kick": "اخراج",
     "you": "شما",
-    "waitingForHost": "منتظر شروع بازی توسط میزبان..."
+    "waitingForHost": "منتظر شروع بازی توسط میزبان...",
+    "approve": "قبول",
+    "reject": "رد",
+    "joinRequests": "درخواست‌های ورود",
+    "awaitingApproval": "منتظر تایید"
   },
   "game": {
     "youAreJudge": "تو مجردی! داور این دوری!",
@@ -50,7 +59,9 @@
     "exitGame": "خروج از بازی",
     "exitConfirmTitle": "از بازی خارج بشی؟",
     "exitConfirmDesc": "اگه الان بری، امتیازات از دست میره.",
-    "stayInGame": "میمونم"
+    "stayInGame": "میمونم",
+    "spectating": "از دور بعد وارد بازی میشی",
+    "endRound": "تموم کردن این دور"
   },
   "results": {
     "roundWinner": "{{name}} این دور رو برد!",

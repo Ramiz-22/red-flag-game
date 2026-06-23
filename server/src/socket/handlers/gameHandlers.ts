@@ -21,6 +21,19 @@ export function registerGameHandlers(socket: Socket, gm: GameManager) {
     game.startGame();
   });
 
+  socket.on('game:end-round', () => {
+    const game = gm.getGameForSocket(socket.id!);
+    if (!game) return;
+
+    const player = game.players.get(socket.id!);
+    if (!player?.isHost) {
+      socket.emit('room:error', { message: 'Not the host', code: 'NOT_HOST' });
+      return;
+    }
+
+    game.forceEndRound();
+  });
+
   socket.on('game:select-perks', ({ cardIds }: { cardIds: string[] }) => {
     if (!Array.isArray(cardIds) || !cardIds.every(id => typeof id === 'string')) {
       socket.emit('room:error', { message: 'Invalid input', code: 'INVALID_CARDS' });

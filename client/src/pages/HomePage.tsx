@@ -11,7 +11,7 @@ export default function HomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { state, createRoom, joinRoom, clearError } = useGame();
+  const { state, createRoom, joinRoom, leaveRoom, clearError } = useGame();
 
   const [nickname, setNickname] = useState(() => localStorage.getItem('redflags_nickname') || '');
   const [roomCode, setRoomCode] = useState(searchParams.get('room') || '');
@@ -96,7 +96,40 @@ export default function HomePage() {
         transition={{ delay: 0.25, duration: 0.6, ease: 'easeOut' }}
         className="glass-strong w-full max-w-md p-8 relative z-10"
       >
-        {mode === 'home' && (
+        {state.joinStatus === 'pending' && (
+          <div className="space-y-5 text-center py-4">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-5xl"
+            >
+              ⏳
+            </motion.div>
+            <h2 className="text-xl font-bold">{t('home.waitingApproval')}</h2>
+            <p className="text-gray-400 text-sm">{t('home.waitingApprovalDesc')}</p>
+            <button
+              onClick={() => { leaveRoom(); setMode('home'); }}
+              className="btn-secondary w-full py-3"
+            >
+              {t('home.cancelRequest')}
+            </button>
+          </div>
+        )}
+
+        {state.joinStatus === 'rejected' && (
+          <div className="space-y-5 text-center py-4">
+            <div className="text-5xl">🚫</div>
+            <h2 className="text-xl font-bold">{t('home.requestRejected')}</h2>
+            <button
+              onClick={() => { leaveRoom(); setMode('home'); }}
+              className="btn-primary w-full py-3"
+            >
+              {t('results.leave')}
+            </button>
+          </div>
+        )}
+
+        {state.joinStatus === 'none' && mode === 'home' && (
           <div className="space-y-5">
             <div>
               <input
@@ -175,7 +208,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {mode === 'join' && (
+        {state.joinStatus === 'none' && mode === 'join' && (
           <div className="space-y-5">
             <div className="text-center">
               <span className="text-gray-500 text-sm">{t('lobby.roomCode')}</span>

@@ -182,6 +182,9 @@
     font-size: 13px;
     line-height: 1;
     position: absolute;
+    /* Force a consistent symbol font so the ♥ glyph stays the same size in
+       Farsi (Vazirmatn renders it smaller) as in English. */
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   .poker-card-corner.top {

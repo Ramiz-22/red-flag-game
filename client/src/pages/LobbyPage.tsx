@@ -12,7 +12,7 @@ export default function LobbyPage() {
   const { code } = useParams<{ code: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { state, leaveRoom, startGame, kickPlayer, clearError } = useGame();
+  const { state, leaveRoom, startGame, kickPlayer, approveJoin, rejectJoin, clearError } = useGame();
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
@@ -86,6 +86,48 @@ export default function LobbyPage() {
                     </button>
                   )}
                 </div>
+              </motion.div>
+            ))}
+
+            {/* Pending join requests — host approves or rejects */}
+            {state.pendingJoins.map((req) => (
+              <motion.div
+                key={`pending-${req.socketId}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-dashed border-white/10"
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm opacity-50"
+                  style={{ backgroundColor: getAvatarColor(req.nickname) }}
+                >
+                  {req.nickname.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-medium flex-1 text-gray-400">{req.nickname}</span>
+                {state.isHost ? (
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={() => approveJoin(req.socketId)}
+                      aria-label={t('lobby.approve')}
+                      title={t('lobby.approve')}
+                      className="w-8 h-8 flex items-center justify-center text-sm rounded-full bg-green-500/15 text-green-400
+                                 border border-green-500/30 hover:bg-green-500/30 transition-colors"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={() => rejectJoin(req.socketId)}
+                      aria-label={t('lobby.reject')}
+                      title={t('lobby.reject')}
+                      className="w-8 h-8 flex items-center justify-center text-sm rounded-full bg-red-500/10 text-red-400
+                                 border border-red-500/20 hover:bg-red-500/25 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-500 italic">{t('lobby.awaitingApproval')}</span>
+                )}
               </motion.div>
             ))}
           </div>

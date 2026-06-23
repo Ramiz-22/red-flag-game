@@ -12,7 +12,11 @@
     "howToPlay": "How to Play",
     "play": "Play",
     "or": "or",
-    "nicknameFirst": "Enter your nickname first"
+    "nicknameFirst": "Enter your nickname first",
+    "waitingApproval": "Waiting for approval",
+    "waitingApprovalDesc": "The host needs to let you in. Hang tight!",
+    "cancelRequest": "Cancel request",
+    "requestRejected": "Your request was declined"
   },
   "lobby": {
     "waitingForPlayers": "Waiting for players...",
@@ -24,8 +28,13 @@
     "copied": "Copied!",
     "copyLink": "Copy Link",
     "host": "Host",
+    "kick": "Kick",
     "you": "You",
-    "waitingForHost": "Waiting for the host to start..."
+    "waitingForHost": "Waiting for the host to start...",
+    "approve": "Approve",
+    "reject": "Reject",
+    "joinRequests": "Join requests",
+    "awaitingApproval": "awaiting approval"
   },
   "game": {
     "youAreJudge": "You are the Single!",
@@ -50,7 +59,9 @@
     "exitGame": "Exit Game",
     "exitConfirmTitle": "Leave the game?",
     "exitConfirmDesc": "You'll lose your progress if you leave now.",
-    "stayInGame": "Stay"
+    "stayInGame": "Stay",
+    "spectating": "You'll join the game from the next round",
+    "endRound": "End this round"
   },
   "results": {
     "roundWinner": "{{name}} wins the round!",

@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { Deck } from './Deck.js';
 import { Player } from './Player.js';
 import { CONFIG } from '../config.js';
-import type { Card, GamePhase, DateProfile } from '../../../shared/types.js';
+import type { Card, GamePhase, DateProfile, PendingJoin, GameSyncPayload, PublicPlayer } from '../../../shared/types.js';
 
 export class GameInstance {
   code: string;
@@ -19,6 +19,9 @@ export class GameInstance {
   redFlagAssignments: Map<string, Card> = new Map(); // targetSocketId -> Card
   redFlagPlayedBy: Set<string> = new Set();
   judgeChoice: string | null = null;
+
+  // Sockets awaiting host approval to join the room.
+  pendingJoins: Map<string, { nickname: string }> = new Map();
 
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
   private tickInterval: ReturnType<typeof setInterval> | null = null;
@@ -62,6 +65,43 @@ export class GameInstance {
     return player;
   }
 
+  isInProgress(): boolean {
+    return this.phase !== ('LOBBY' as GamePhase) && this.phase !== ('GAME_OVER' as GamePhase);
+  }
+
+  addPendingJoin(socketId: string, nickname: string) {
+    this.pendingJoins.set(socketId, { nickname });
+    this.lastActivityAt = Date.now();
+  }
+
+  getPendingList(): PendingJoin[] {
+    return [...this.pendingJoins.entries()].map(([socketId, v]) => ({ socketId, nickname: v.nickname }));
+  }
+
+  approveJoin(socketId: string): Player | null {
+    const pending = this.pendingJoins.get(socketId);
+    if (!pending) return null;
+    this.pendingJoins.delete(socketId);
+    // A player approved mid-game joins the rotation at the next round (see startRound).
+    return this.addPlayer(socketId, pending.nickname, false);
+  }
+
+  rejectJoin(socketId: string): boolean {
+    return this.pendingJoins.delete(socketId);
+  }
+
+  buildSyncFor(spectating: boolean): GameSyncPayload {
+    return {
+      phase: this.phase,
+      roundNumber: this.roundNumber,
+      judgeSocketId: this.judgeSocketId,
+      judgeNickname: this.judgeNickname,
+      players: [...this.players.values()].map((p) => p.toPublic()) as PublicPlayer[],
+      dates: this.buildDates(),
+      spectating,
+    };
+  }
+
   removePlayer(socketId: string): string | undefined {
     this.players.delete(socketId);
     this.playerOrder = this.playerOrder.filter((s) => s !== socketId);
@@ -74,6 +114,91 @@ export class GameInstance {
       }
     }
     return undefined;
+  }
+
+  handlePlayerRemoved(socketId: string): { newHostSocketId?: string; tooFewPlayers: boolean } {
+    const wasJudge = socketId === this.judgeSocketId;
+    const removedIndex = this.playerOrder.indexOf(socketId);
+
+    const newHostSocketId = this.removePlayer(socketId);
+
+    this.perkSelections.delete(socketId);
+    this.redFlagPlayedBy.delete(socketId);
+    this.redFlagAssignments.delete(socketId);
+
+    const inLobby = this.phase === ('LOBBY' as GamePhase) || this.phase === ('GAME_OVER' as GamePhase);
+    if (inLobby || this.playerOrder.length === 0) {
+      return { newHostSocketId, tooFewPlayers: false };
+    }
+
+    if (this.players.size < CONFIG.MIN_PLAYERS) {
+      this.clearTimers();
+      this.phase = 'LOBBY' as GamePhase;
+      for (const p of this.players.values()) {
+        p.score = 0;
+        p.hand = { perks: [], redFlags: [] };
+      }
+      this.playerOrder = [];
+      this.io.to(this.room).emit('game:ended-early');
+      return { newHostSocketId, tooFewPlayers: true };
+    }
+
+    if (removedIndex >= 0 && removedIndex < this.judgeIndex) {
+      this.judgeIndex--;
+    }
+    this.judgeIndex = this.judgeIndex % this.playerOrder.length;
+
+    // The active rotation got too small for this round, but mid-game joiners
+    // (spectators not yet in playerOrder) can fill it — restart the round so
+    // everyone is dealt in fresh.
+    if (this.playerOrder.length < CONFIG.MIN_PLAYERS && this.players.size >= CONFIG.MIN_PLAYERS) {
+      this.startRound();
+      return { newHostSocketId, tooFewPlayers: false };
+    }
+
+    if (wasJudge) {
+      this.startRound();
+    } else {
+      this.checkPhaseAfterRemoval();
+    }
+
+    return { newHostSocketId, tooFewPlayers: false };
+  }
+
+  private checkPhaseAfterRemoval() {
+    if (this.phase === ('PERK_SELECTION' as GamePhase)) {
+      this.io.to(this.room).emit('game:perk-selection-update', {
+        playersReady: [...this.perkSelections.keys()],
+      });
+      if (this.perkSelections.size >= this.matchmakers.length) {
+        this.advanceToRedFlag();
+      }
+    } else if (this.phase === ('RED_FLAG_PLAY' as GamePhase)) {
+      if (this.redFlagPhaseComplete()) {
+        this.advanceToReveal();
+      } else {
+        this.broadcastAvailableTargets();
+        this.io.to(this.room).emit('game:perk-selection-update', {
+          playersReady: [...this.redFlagPlayedBy],
+        });
+      }
+    } else if (this.phase === ('JUDGING' as GamePhase) || this.phase === ('REVEAL' as GamePhase)) {
+      this.io.to(this.room).emit('game:dates-revealed', { dates: this.buildDates() });
+    }
+  }
+
+  // Host escape hatch: abandon the current round (no winner) and start a fresh
+  // one with the next judge. Works from any in-progress phase, so a stuck round
+  // can always be unblocked manually.
+  forceEndRound(): boolean {
+    if (!this.isInProgress()) return false;
+    this.clearTimers();
+    this.discardPlayedCards();
+    if (this.playerOrder.length > 0) {
+      this.judgeIndex = (this.judgeIndex + 1) % this.playerOrder.length;
+    }
+    this.startRound();
+    return true;
   }
 
   startGame() {
@@ -98,6 +223,11 @@ export class GameInstance {
   }
 
   private startRound() {
+    // Fold in anyone who joined mid-game; they enter the rotation now (next round).
+    for (const sid of this.players.keys()) {
+      if (!this.playerOrder.includes(sid)) this.playerOrder.push(sid);
+    }
+
     this.roundNumber++;
     this.perkSelections.clear();
     this.redFlagAssignments.clear();
@@ -265,6 +395,14 @@ export class GameInstance {
     return true;
   }
 
+  // The red flag phase is finished when no remaining giver can legally play —
+  // either everyone has played, or the only valid target(s) left the game.
+  // Without this, a giver whose sole feasible target disconnects would deadlock
+  // the round forever.
+  private redFlagPhaseComplete(): boolean {
+    return !this.remainingGivers().some((g) => this.feasibleTargetsFor(g).length > 0);
+  }
+
   // Targets a giver may pick without stranding any other remaining giver.
   private feasibleTargetsFor(giverSocketId: string): string[] {
     const others = this.remainingGivers().filter((g) => g !== giverSocketId);
@@ -315,10 +453,7 @@ export class GameInstance {
 
     this.broadcastAvailableTargets();
 
-    const allPlayed = this.matchmakers.every((mm) =>
-      this.redFlagPlayedBy.has(mm.socketId)
-    );
-    if (allPlayed) {
+    if (this.redFlagPhaseComplete()) {
       this.advanceToReveal();
     }
     return true;

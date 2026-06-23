@@ -113,6 +113,25 @@ export interface GameOverPayload {
   finalScores: Record<string, number>;
 }
 
+export interface PendingJoin {
+  socketId: string;
+  nickname: string;
+}
+
+export interface JoinRequestsPayload {
+  pending: PendingJoin[];
+}
+
+export interface GameSyncPayload {
+  phase: GamePhase;
+  roundNumber: number;
+  judgeSocketId: string;
+  judgeNickname: string;
+  players: PublicPlayer[];
+  dates: DateProfile[];
+  spectating: boolean;
+}
+
 export type ErrorCode =
   | 'ROOM_NOT_FOUND'
   | 'ROOM_FULL'

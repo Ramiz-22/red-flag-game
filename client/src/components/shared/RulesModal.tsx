@@ -13,7 +13,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
     { title: t('rules.step1Title'), desc: t('rules.step1Desc'), icon: '💝' },
     { title: t('rules.step2Title'), desc: t('rules.step2Desc'), icon: '🚩' },
     { title: t('rules.step3Title'), desc: t('rules.step3Desc'), icon: '🗣️' },
-    { title: t('rules.step4Title'), desc: t('rules.step4Desc'), icon: '👑' },
+    { title: t('rules.step4Title'), desc: t('rules.step4Desc'), icon: '⚖️' },
   ];
 
   return (
@@ -51,7 +51,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
               ))}
             </div>
 
-            <p className="text-brand-gold font-bold text-center mt-6">{t('rules.winCondition')}</p>
+            <p className="text-brand-red font-bold text-center mt-6">{t('rules.winCondition')}</p>
 
             <button onClick={onClose} className="btn-primary w-full mt-6">
               {t('rules.close')}

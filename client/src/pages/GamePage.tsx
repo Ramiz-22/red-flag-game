@@ -122,7 +122,7 @@ export default function GamePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { lang } = useLanguage();
-  const { state, selectPerks, playRedFlag, judgePick, leaveRoom, startGame, clearError } = useGame();
+  const { state, selectPerks, playRedFlag, judgePick, endRound, leaveRoom, startGame, kickPlayer, approveJoin, rejectJoin, clearError } = useGame();
 
   const [selectedPerks, setSelectedPerks] = useState<string[]>([]);
   const [selectedRedFlag, setSelectedRedFlag] = useState<string | null>(null);
@@ -131,7 +131,7 @@ export default function GamePage() {
   const [lockedIn, setLockedIn] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const { width: vw } = useWindowSize();
-  const isMobile = vw < 700;
+  const isMobile = vw < 1445;
 
   const isJudge = state.mySocketId === state.judgeSocketId;
   const phase = state.phase as GamePhase;
@@ -196,7 +196,7 @@ export default function GamePage() {
   const renderCardText = (card: Card) => card.text[lang] || card.text.en;
   const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
 
-  const showCardFan = !isJudge && (phase === GamePhase.PERK_SELECTION || phase === GamePhase.RED_FLAG_PLAY);
+  const showCardFan = !isJudge && !state.spectating && (phase === GamePhase.PERK_SELECTION || phase === GamePhase.RED_FLAG_PLAY);
 
   const roundWinnerPlayer = state.roundWinner
     ? state.players.find(p => p.socketId === state.roundWinner)
@@ -208,28 +208,17 @@ export default function GamePage() {
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(220,38,38,0.06),transparent_70%)]" />
 
       <div className="relative z-10">
-        <Header roomCode={state.roomCode || ''} showScore onToggleScore={() => setShowScoreboard(!showScoreboard)} onLeave={() => setShowExitConfirm(true)} />
+        <Header roomCode={state.roomCode || ''} showScore notify={state.isHost && state.pendingJoins.length > 0} onToggleScore={() => setShowScoreboard(!showScoreboard)} onLeave={() => setShowExitConfirm(true)} />
       </div>
 
-      <div className="flex-1 flex flex-col relative z-10 min-h-0">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1.5 rounded-lg bg-black/30 border border-white/10 text-sm font-medium text-gray-300">
-              {t('game.round', { number: state.roundNumber })}
-            </span>
-            {isJudge ? (
-              <span className="px-3 py-1.5 rounded-lg bg-yellow-500/15 border border-yellow-500/25 text-sm font-medium text-yellow-400">
-                👑 {t('game.youAreJudge')}
-              </span>
-            ) : (
-              <span className="px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/25 text-sm font-medium text-blue-400">
-                🃏 {t('game.youAreMatchmaker')}
-              </span>
-            )}
-          </div>
+      {state.spectating && (
+        <div className="relative z-10 mx-4 mt-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/25 text-center text-sm text-blue-300">
+          👀 {t('game.spectating')}
         </div>
+      )}
 
-        <motion.div key={`${phase}-${state.roundNumber}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-center px-4 mb-1">
+      <div className="flex-1 flex flex-col relative z-10 min-h-0">
+        <motion.div key={`${phase}-${state.roundNumber}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-center px-4 mt-2 mb-1">
           <PhaseTitle phase={phase} isJudge={isJudge} state={state} t={t} />
         </motion.div>
 
@@ -270,7 +259,6 @@ export default function GamePage() {
                                 ? 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300 ring-1 ring-white/20'
                                 : 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300'
                             }`}>
-                              <span className="text-sm leading-none">👑</span>
                               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
                                 style={{ backgroundColor: getAvatarColor(p.nickname) }}>
                                 {p.nickname.charAt(0).toUpperCase()}
@@ -289,7 +277,7 @@ export default function GamePage() {
 
                       const isSelf = p.socketId === state.mySocketId;
                       const isReady = state.playersReady.includes(p.socketId);
-                      const hasRedFlag = state.dates.some(d => d.matchmakerSocketId === p.socketId && d.redFlag);
+
                       const zone = getZone((i - myIndex + total) % total, total);
                       const date = state.dates.find(d => d.matchmakerSocketId === p.socketId);
                       const revealed = !!date && (
@@ -342,7 +330,6 @@ export default function GamePage() {
                                 </div>
                                 <span className="max-w-[70px] truncate" dir="auto">{p.nickname}</span>
                                 {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
-                                {hasRedFlag && <span className="text-[9px]">🚩</span>}
                                 {isReady && (
                                   <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
                                     className="text-green-400 font-bold text-[10px]">✓</motion.span>
@@ -532,7 +519,6 @@ export default function GamePage() {
                   return (
                     <div className="sticky top-0 z-20 flex justify-center py-2 bg-gradient-to-b from-surface-dark via-surface-dark/90 to-transparent">
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 text-xs font-medium">
-                        <span className="text-sm leading-none">👑</span>
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: getAvatarColor(judge.nickname) }}>
                           {judge.nickname.charAt(0).toUpperCase()}
                         </div>
@@ -589,9 +575,7 @@ export default function GamePage() {
                           </div>
                           <span className="max-w-[140px] truncate" dir="auto">{p.nickname}</span>
                           {isSelf && <span className="text-blue-400/70 text-[9px]">({t('lobby.you')})</span>}
-                          {hasRedFlag && <span className="text-[9px]">🚩</span>}
                           {isReady && <span className="text-green-400 font-bold text-[10px]">✓</span>}
-                          {canPick && <span className="text-red-300 text-[10px] ms-0.5">👆</span>}
                         </div>
                         {/* Cards */}
                         {revealed && date ? (
@@ -772,11 +756,14 @@ export default function GamePage() {
         {showScoreboard && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowScoreboard(false)} className="fixed inset-0 bg-black/40 z-30" />
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 end-0 h-full w-72 bg-surface-dark/95 backdrop-blur-xl border-s border-white/[0.06] p-5 z-40 shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
+            <motion.div initial={{ x: lang === 'fa' ? '-100%' : '100%' }} animate={{ x: 0 }} exit={{ x: lang === 'fa' ? '-100%' : '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 end-0 h-full w-72 max-w-[85vw] bg-surface-dark/95 backdrop-blur-xl border-s border-white/[0.06] p-5 z-40 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg">🏆 {t('results.finalScores')}</h3>
                 <button onClick={() => setShowScoreboard(false)} className="text-gray-500 hover:text-white text-lg">✕</button>
+              </div>
+              <div className="text-center text-sm text-gray-400 mb-4 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+                {t('game.round', { number: state.roundNumber })}
               </div>
               {sortedPlayers.map((p, i) => (
                 <div key={p.socketId} className={`flex items-center gap-3 py-2.5 px-3 rounded-xl mb-1.5 ${
@@ -785,10 +772,59 @@ export default function GamePage() {
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs"
                     style={{ backgroundColor: getAvatarColor(p.nickname) }}>{p.nickname.charAt(0).toUpperCase()}</div>
                   <span className="flex-1 text-sm font-medium">{p.nickname}</span>
-                  {p.socketId === state.judgeSocketId && <span className="text-xs">👑</span>}
+                  {p.socketId === state.mySocketId && (
+                    <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 font-medium">
+                      {t('lobby.you')}
+                    </span>
+                  )}
+                  {p.isHost && (
+                    <span className="px-2 py-0.5 text-[10px] rounded-full bg-brand-gold/15 text-brand-gold border border-brand-gold/20 font-medium">
+                      {t('lobby.host')}
+                    </span>
+                  )}
                   <span className="text-white font-bold text-sm">{p.score}</span>
+                  {state.isHost && p.socketId !== state.mySocketId && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); kickPlayer(p.socketId); }}
+                      aria-label={t('lobby.kick')}
+                      className="text-red-400/60 hover:text-red-400 text-xs transition-colors px-1"
+                    >✕</button>
+                  )}
                 </div>
               ))}
+
+              {/* Pending join requests (host approves / rejects) */}
+              {state.pendingJoins.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/[0.06]">
+                  <p className="text-xs text-gray-500 mb-2">{t('lobby.joinRequests')}</p>
+                  {state.pendingJoins.map((req) => (
+                    <div key={`pending-${req.socketId}`} className="flex items-center gap-2 py-2 px-3 rounded-xl mb-1.5 bg-white/[0.02] border border-dashed border-white/10">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs opacity-50"
+                        style={{ backgroundColor: getAvatarColor(req.nickname) }}>{req.nickname.charAt(0).toUpperCase()}</div>
+                      <span className="flex-1 text-sm text-gray-400">{req.nickname}</span>
+                      {state.isHost && (
+                        <>
+                          <button onClick={() => approveJoin(req.socketId)} aria-label={t('lobby.approve')} title={t('lobby.approve')}
+                            className="w-7 h-7 flex items-center justify-center text-xs rounded-full bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-colors">✓</button>
+                          <button onClick={() => rejectJoin(req.socketId)} aria-label={t('lobby.reject')} title={t('lobby.reject')}
+                            className="w-7 h-7 flex items-center justify-center text-xs rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/25 transition-colors">✕</button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Host escape hatch: force-end a stuck round */}
+              {state.isHost && phase !== GamePhase.GAME_OVER && (
+                <button
+                  onClick={endRound}
+                  className="w-full mt-5 py-2.5 rounded-xl text-sm font-medium text-red-300
+                             bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 transition-colors"
+                >
+                  ⏭️ {t('game.endRound')}
+                </button>
+              )}
             </motion.div>
           </>
         )}
@@ -834,6 +870,16 @@ function GameOverView({ state, sortedPlayers, startGame, handleExitGame, t }: an
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md"
                 style={{ backgroundColor: getAvatarColor(p.nickname) }}>{p.nickname.charAt(0).toUpperCase()}</div>
               <span className="flex-1 font-medium">{p.nickname}</span>
+              {p.socketId === state.mySocketId && (
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 font-medium">
+                  {t('lobby.you')}
+                </span>
+              )}
+              {p.isHost && (
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-brand-gold/15 text-brand-gold border border-brand-gold/20 font-medium">
+                  {t('lobby.host')}
+                </span>
+              )}
               <span className="text-white font-bold">{t('results.score', { score: p.score })}</span>
             </div>
           ))}

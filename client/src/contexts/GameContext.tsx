@@ -13,7 +13,11 @@ import type {
   RedFlagTargetPayload,
   RoomCreatedPayload,
   RoomJoinedPayload,
+  PendingJoin,
+  GameSyncPayload,
 } from '@shared/types';
+
+type JoinStatus = 'none' | 'pending' | 'rejected';
 
 interface GameStore extends ClientGameState {
   roomCode: string | null;
@@ -22,6 +26,9 @@ interface GameStore extends ClientGameState {
   isInRoom: boolean;
   isInGame: boolean;
   error: string | null;
+  pendingJoins: PendingJoin[];
+  joinStatus: JoinStatus;
+  spectating: boolean;
 }
 
 type Action =
@@ -29,7 +36,7 @@ type Action =
   | { type: 'ROOM_CREATED'; payload: RoomCreatedPayload }
   | { type: 'ROOM_JOINED'; payload: RoomJoinedPayload }
   | { type: 'PLAYER_JOINED'; payload: PublicPlayer }
-  | { type: 'PLAYER_LEFT'; payload: { socketId: string; newHostSocketId?: string } }
+  | { type: 'PLAYER_LEFT'; payload: { socketId: string; newHostSocketId?: string; tooFewPlayers?: boolean } }
   | { type: 'GAME_STARTED'; payload: GameStartedPayload }
   | { type: 'HAND_DEALT'; payload: HandDealtPayload }
   | { type: 'PHASE_CHANGED'; payload: PhaseChangedPayload }
@@ -41,6 +48,10 @@ type Action =
   | { type: 'GAME_OVER'; payload: GameOverPayload }
   | { type: 'TIMER_TICK'; payload: number }
   | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'JOIN_PENDING' }
+  | { type: 'JOIN_REJECTED' }
+  | { type: 'JOIN_REQUESTS'; payload: PendingJoin[] }
+  | { type: 'GAME_SYNC'; payload: GameSyncPayload }
   | { type: 'LEAVE_ROOM' };
 
 const initialState: GameStore = {
@@ -62,6 +73,9 @@ const initialState: GameStore = {
   roundWinner: null,
   timer: null,
   playersReady: [],
+  pendingJoins: [],
+  joinStatus: 'none',
+  spectating: false,
 };
 
 function reducer(state: GameStore, action: Action): GameStore {
@@ -80,6 +94,7 @@ function reducer(state: GameStore, action: Action): GameStore {
         isHost: p.players.some((pl) => pl.socketId === mySocketId && pl.isHost),
         isInRoom: true,
         phase: 'LOBBY' as GamePhase,
+        joinStatus: 'none',
         error: null,
       };
     }
@@ -99,6 +114,9 @@ function reducer(state: GameStore, action: Action): GameStore {
         const idx = updated.findIndex((p) => p.socketId === action.payload.newHostSocketId);
         if (idx >= 0) updated[idx] = { ...updated[idx], isHost: true };
       }
+      if (action.payload.tooFewPlayers) {
+        return { ...state, players: updated, isHost, isInGame: false, phase: 'LOBBY' as GamePhase };
+      }
       return { ...state, players: updated, isHost };
     }
 
@@ -116,9 +134,11 @@ function reducer(state: GameStore, action: Action): GameStore {
       };
 
     case 'HAND_DEALT':
+      // Receiving a hand means we're active in the round — no longer spectating.
       return {
         ...state,
         myHand: { perks: action.payload.perks, redFlags: action.payload.redFlags },
+        spectating: false,
       };
 
     case 'PHASE_CHANGED':
@@ -180,6 +200,28 @@ function reducer(state: GameStore, action: Action): GameStore {
     case 'SET_ERROR':
       return { ...state, error: action.payload };
 
+    case 'JOIN_PENDING':
+      return { ...state, joinStatus: 'pending', error: null };
+
+    case 'JOIN_REJECTED':
+      return { ...state, joinStatus: 'rejected' };
+
+    case 'JOIN_REQUESTS':
+      return { ...state, pendingJoins: action.payload };
+
+    case 'GAME_SYNC':
+      return {
+        ...state,
+        isInGame: true,
+        spectating: action.payload.spectating,
+        phase: action.payload.phase,
+        roundNumber: action.payload.roundNumber,
+        judgeSocketId: action.payload.judgeSocketId,
+        judgeNickname: action.payload.judgeNickname,
+        players: action.payload.players,
+        dates: action.payload.dates,
+      };
+
     case 'LEAVE_ROOM':
       return { ...initialState, mySocketId: state.mySocketId };
 
@@ -197,7 +239,10 @@ interface GameContextType {
   selectPerks: (cardIds: string[]) => void;
   playRedFlag: (cardId: string, targetSocketId: string) => void;
   judgePick: (winnerSocketId: string) => void;
+  endRound: () => void;
   kickPlayer: (targetSocketId: string) => void;
+  approveJoin: (socketId: string) => void;
+  rejectJoin: (socketId: string) => void;
   clearError: () => void;
 }
 
@@ -242,6 +287,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'LEAVE_ROOM' });
     });
 
+    socket.on('room:join-pending', () => {
+      dispatch({ type: 'JOIN_PENDING' });
+    });
+
+    socket.on('room:join-rejected', () => {
+      dispatch({ type: 'JOIN_REJECTED' });
+    });
+
+    socket.on('room:join-requests', (data: { pending: PendingJoin[] }) => {
+      dispatch({ type: 'JOIN_REQUESTS', payload: data.pending });
+    });
+
+    socket.on('game:sync', (data: GameSyncPayload) => {
+      dispatch({ type: 'GAME_SYNC', payload: data });
+    });
+
     socket.on('game:started', (data: GameStartedPayload) => {
       dispatch({ type: 'GAME_STARTED', payload: data });
     });
@@ -282,6 +343,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'TIMER_TICK', payload: data.secondsRemaining });
     });
 
+    socket.on('game:ended-early', () => {
+      dispatch({ type: 'SET_ERROR', payload: null });
+    });
+
     return () => {
       socket.off('connect');
       socket.off('room:created');
@@ -290,6 +355,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       socket.off('room:player-left');
       socket.off('room:error');
       socket.off('room:kicked');
+      socket.off('room:join-pending');
+      socket.off('room:join-rejected');
+      socket.off('room:join-requests');
+      socket.off('game:sync');
       socket.off('game:started');
       socket.off('game:hand-dealt');
       socket.off('game:phase-changed');
@@ -300,6 +369,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       socket.off('game:round-result');
       socket.off('game:over');
       socket.off('game:timer-tick');
+      socket.off('game:ended-early');
     };
   }, [socket]);
 
@@ -332,8 +402,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket?.emit('game:judge-pick', { winnerSocketId });
   }, [socket]);
 
+  const endRound = useCallback(() => {
+    socket?.emit('game:end-round');
+  }, [socket]);
+
   const kickPlayer = useCallback((targetSocketId: string) => {
     socket?.emit('room:kick', { targetSocketId });
+  }, [socket]);
+
+  const approveJoin = useCallback((socketId: string) => {
+    socket?.emit('room:approve-join', { socketId });
+  }, [socket]);
+
+  const rejectJoin = useCallback((socketId: string) => {
+    socket?.emit('room:reject-join', { socketId });
   }, [socket]);
 
   const clearError = useCallback(() => {
@@ -351,7 +433,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         selectPerks,
         playRedFlag,
         judgePick,
+        endRound,
         kickPlayer,
+        approveJoin,
+        rejectJoin,
         clearError,
       }}
     >
